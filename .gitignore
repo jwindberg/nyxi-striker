@@ -19,6 +19,7 @@ Icon?
 
 # NYXI's proprietary software and documents: keep local, never publish
 extracted_asar/
+extracted_asar.old/
 CA01-Striker-Retro-Mechanical-Keyboard-user-manual.pdf
 manual_text.txt
 manual_extracted.txt
