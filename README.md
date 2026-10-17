@@ -18,6 +18,8 @@ Needs Rust (`rustup`), Node.js/npm and 7-Zip (macOS: `brew install sevenzip`, Li
 ./nyxi-app.sh                                    # builds the driver on first run, then starts it and the app
 ```
 
+Setup installs NYXI's app files inside the downloaded Electron (as their installer lays them out) so it runs as an installed app; nothing from the `.exe` is executed. On macOS the app starts its own driver from `~/Library/Application Support/NYXI Driver/iot_driver_v160`, so `nyxi-app.sh` puts our driver there before each launch.
+
 On macOS, closing the window leaves the app running; quit it with Cmd+Q to stop the driver too.
 
 Goal: our own cross-platform app (macOS, Windows, Linux) that anyone can build from this repo.
