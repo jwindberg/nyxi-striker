@@ -6,7 +6,19 @@ Tools for controlling the NYXI CA01 "Striker" keyboard (backlight, 9x9 screen, s
 - `nyxi_led.py`: read and set the backlight (`python3 nyxi_led.py get`, `python3 nyxi_led.py modes`).
 - `nyxi_screen.py`: draw on the 9x9 screen (`python3 nyxi_screen.py heart`).
 - `nyxi-driver/`: Rust replacement for NYXI's `iot_driver`, which the official Electron app talks to over gRPC-web on 127.0.0.1:3814.
-- `nyxi-app.sh`: runs the official app on Linux against `nyxi-driver`. It needs a local `extracted_asar/` and `electron-linux/`, which are not in this repo because the app is NYXI's code.
+- `nyxi-app.sh`: runs the official app on macOS or Linux against `nyxi-driver`.
+- `setup-official-app.sh`: one-time setup for `nyxi-app.sh`. NYXI's app is their code, so it is not in this repo; this unpacks it from their Windows installer.
+
+## Running the official NYXI app on macOS or Linux
+
+Needs Rust (`rustup`), Node.js/npm and 7-Zip (macOS: `brew install sevenzip`, Linux: `sudo apt install 7zip`). On Linux the driver build also needs `sudo apt install libudev-dev`.
+
+```
+./setup-official-app.sh path/to/NYXI_SETUP.exe   # once per machine
+./nyxi-app.sh                                    # builds the driver on first run, then starts it and the app
+```
+
+On macOS, closing the window leaves the app running; quit it with Cmd+Q to stop the driver too.
 
 Goal: our own cross-platform app (macOS, Windows, Linux) that anyone can build from this repo.
 
