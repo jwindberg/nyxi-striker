@@ -34,6 +34,3 @@ protoc-local/
 nyxi-driver/nyxi_direct
 /driver.proto
 /supported_devices.toml
-
-# Outdated Gemini-era notes (superseded by PROTOCOL.md)
-LINUX_HANDOFF.md

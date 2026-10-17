@@ -486,4 +486,3 @@ Other files in the project folder:
 - `nyxi-driver/`: the Linux gRPC driver; `src/device_manager.rs` has the checksum and transport code.
 - `extracted_asar/iot_driver.exe`: NYXI's original Windows driver (32-bit Rust, stripped). It uses hidapi's `HidD_SetFeature` / `HidD_GetFeature`.
 - `extracted_asar/iot_driver` (Linux ELF): not NYXI's. It is an older build of the replacement driver with the wrong checksum; ignore it.
-- `LINUX_HANDOFF.md`: notes from an earlier attempt. Its top section is corrected; the rest has the wrong checksum and interface numbers.
