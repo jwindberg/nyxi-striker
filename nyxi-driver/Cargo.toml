@@ -1,0 +1,45 @@
+[package]
+name = "nyxi-driver"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "nyxi_driver"
+path = "src/lib.rs"
+
+[[bin]]
+name = "nyxi-driver"
+path = "src/bin/nyxi-driver.rs"
+
+[[bin]]
+name = "iot_driver"
+path = "src/bin/iot_driver.rs"
+
+[[bin]]
+name = "list_hid"
+path = "src/bin/list_hid.rs"
+
+[[bin]]
+name = "test_led"
+path = "src/bin/test_led.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+tonic = "0.12"
+tonic-web = "0.12"
+prost = "0.13"
+hidapi = "2.6"
+sled = "0.34"
+sysinfo = "0.31"
+tower-http = { version = "0.5", features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+parking_lot = "0.12"
+async-stream = "0.3"
+futures-core = "0.3"
+
+[build-dependencies]
+tonic-build = "0.12"

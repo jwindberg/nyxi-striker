@@ -1,0 +1,26 @@
+# Build output
+target/
+__pycache__/
+*.pyc
+.DS_Store
+
+# NYXI's proprietary software and documents: keep local, never publish
+extracted_asar/
+CA01-Striker-Retro-Mechanical-Keyboard-user-manual.pdf
+manual_text.txt
+manual_extracted.txt
+manual_pages/
+
+# Local toolchain workarounds (Linux build without sudo)
+electron-linux/
+libudev-local/
+protoc-local/
+*.deb
+
+# Compiled leftovers and duplicates
+nyxi-driver/nyxi_direct
+/driver.proto
+/supported_devices.toml
+
+# Outdated Gemini-era notes (superseded by PROTOCOL.md)
+LINUX_HANDOFF.md
