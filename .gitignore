@@ -35,3 +35,6 @@ protoc-local/
 nyxi-driver/nyxi_direct
 /driver.proto
 /supported_devices.toml
+
+# Packaged builds (contain NYXI code)
+release/

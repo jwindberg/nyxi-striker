@@ -22,6 +22,13 @@ Setup clones the app into `extracted_asar/` and installs it inside the downloade
 
 On macOS, closing the window leaves the app running; quit it with Cmd+Q to stop the driver too.
 
+### Installable packages
+
+`./package-official-app.sh` (after setup) builds a self-contained package of the app plus our driver for the machine it runs on. These contain NYXI's code: personal use only.
+
+- macOS: `release/NYXI-Driver-mac-<arch>.dmg`. Open it and drag "NYXI Driver" to Applications. On first launch the app copies its driver to `~/Library/Application Support/NYXI Driver/iot_driver_v160`; after installing a newer build, delete that file so the new driver is copied in.
+- Linux: `release/NYXI-Driver-linux-<arch>.tar.gz`. Unpack it and run `./install.sh` (installs for your user, adds a menu entry and the `nyxi-app` command; also needs the udev rule below).
+
 Goal: our own cross-platform app (macOS, Windows, Linux) that anyone can build from this repo.
 
 ## Linux setup
