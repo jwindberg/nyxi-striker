@@ -57,6 +57,10 @@ npx --yes @electron/packager@18 "$WORK/app" "$NAME" \
     --out "$WORK/pkg" --no-prune --overwrite ${ICON_ARGS[@]+"${ICON_ARGS[@]}"}
 BUILT="$WORK/pkg/$NAME-$PLATFORM-$ARCH"
 mkdir -p "$OUT"
+# The packaged app loads its pages (and upgrades its driver) from resources/app.asar.unpacked/, as
+# NYXI's installer lays it out; without it the hidden window never loads and so never shows.
+if [ "$PLATFORM" = darwin ]; then RES="$BUILT/$NAME.app/Contents/Resources"; else RES="$BUILT/resources"; fi
+ln -s app "$RES/app.asar.unpacked"
 
 if [ "$PLATFORM" = darwin ]; then
     # Re-seal the bundle after adding files (ad-hoc; enough for a locally installed app).

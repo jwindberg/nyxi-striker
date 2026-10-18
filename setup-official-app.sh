@@ -59,8 +59,10 @@ else
     else
         git clone "$APP_REPO" "$ROOT/extracted_asar"
     fi
-    # Electron runs resources/app/ the same way as resources/app.asar.
+    # Electron runs resources/app/ the same way as resources/app.asar. The app loads its pages from
+    # resources/app.asar.unpacked/, so that points at the same files.
     ln -s "$ROOT/extracted_asar" "$RESOURCES/app"
+    ln -s app "$RESOURCES/app.asar.unpacked"
 fi
 
 # The app only loads its bundled pages when Electron reports app.isPackaged, which is false
