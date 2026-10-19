@@ -180,17 +180,34 @@
     opacity: 0.35;
     pointer-events: none;
   }
+  /* appearance: none so every platform's web engine draws it the same way. */
   select {
+    appearance: none;
+    -webkit-appearance: none;
     width: 100%;
-    background: var(--key);
-    color: var(--key-text);
-    border: none;
-    border-bottom: 3px solid var(--key-edge);
-    border-radius: 7px;
-    padding: 7px 10px;
+    background-color: var(--panel-2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23f5c400' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 34px 7px 11px;
     font: inherit;
-    font-size: 0.92rem;
+    font-size: 0.88rem;
+    line-height: 1.3;
     cursor: pointer;
+  }
+  select:hover:not(:disabled) {
+    border-color: var(--muted);
+  }
+  select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  option {
+    background: var(--panel-2);
+    color: var(--text);
   }
   input[type="range"] {
     width: 100%;
