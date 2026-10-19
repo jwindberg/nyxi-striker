@@ -54,10 +54,18 @@
   <header>
     <div>
       <h2>Screen animations</h2>
-      <p class="note">Choosing one shows it on the keyboard right away, in its custom slot. Fn + Left Ctrl still cycles the keyboard's own animations.</p>
+      <p class="note">Choosing one shows it on the keyboard right away, in its custom slot.</p>
     </div>
     <button class="key" onclick={clear} disabled={busy}>Clear screen</button>
   </header>
+
+  <aside class="shortcuts">
+    <p><b>The keyboard's own animations</b> are always available from the keyboard itself:</p>
+    <ul>
+      <li><kbd>Fn</kbd> + <kbd>Left Ctrl</kbd> cycles jumping bird → your custom slot → Pac-Man → cat</li>
+      <li><kbd>Fn</kbd> + <kbd>Page Down</kbd> turns the screen on or off</li>
+    </ul>
+  </aside>
 
   {#if error}<p class="error">{error}</p>{/if}
 
@@ -89,6 +97,33 @@
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 14px;
+  }
+  .shortcuts {
+    border-left: 3px solid var(--accent);
+    background: var(--panel-2);
+    border-radius: 0 10px 10px 0;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 0.88rem;
+  }
+  .shortcuts p {
+    margin: 0 0 6px;
+  }
+  .shortcuts ul {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  kbd {
+    background: var(--key);
+    color: var(--key-text);
+    border-bottom: 2px solid var(--key-edge);
+    border-radius: 4px;
+    padding: 0 6px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
   }
   .now {
     display: grid;
