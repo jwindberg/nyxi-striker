@@ -1,7 +1,7 @@
 //! Tauri backend: thin commands over nyxi-core. The keyboard is opened on first use and
 //! dropped after any error, so unplugging and replugging recovers on the next call.
 
-use nyxi_core::{lighting, screen, Animation, Frame, Info, Keyboard, Lighting, ModeInfo, Zone};
+use nyxi_core::{lighting, screen, Animation, Frame, Info, Keyboard, Lighting, ModeInfo, Settings, SleepTimers, Zone};
 use std::sync::Mutex;
 use tauri::State;
 
@@ -50,11 +50,48 @@ async fn play(device: State<'_, Device>, frames: Vec<Frame>, delay: u8) -> Resul
     with_keyboard(&device, |kb| kb.upload_frames(&frames, delay))
 }
 
+#[tauri::command]
+async fn get_settings(device: State<'_, Device>) -> Result<Settings, String> {
+    with_keyboard(&device, |kb| kb.settings())
+}
+
+#[tauri::command]
+async fn set_polling_rate(device: State<'_, Device>, hz: u16) -> Result<(), String> {
+    with_keyboard(&device, |kb| kb.set_polling_rate(hz))
+}
+
+#[tauri::command]
+async fn set_debounce(device: State<'_, Device>, ms: u8) -> Result<(), String> {
+    with_keyboard(&device, |kb| kb.set_debounce(ms))
+}
+
+#[tauri::command]
+async fn set_win_lock(device: State<'_, Device>, locked: bool) -> Result<(), String> {
+    with_keyboard(&device, |kb| kb.set_win_lock(locked))
+}
+
+#[tauri::command]
+async fn set_sleep_timers(device: State<'_, Device>, timers: SleepTimers) -> Result<(), String> {
+    with_keyboard(&device, |kb| kb.set_sleep_timers(&timers))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(Device::default())
-        .invoke_handler(tauri::generate_handler![info, modes, get_lighting, set_lighting, animations, play])
+        .invoke_handler(tauri::generate_handler![
+            info,
+            modes,
+            get_lighting,
+            set_lighting,
+            animations,
+            play,
+            get_settings,
+            set_polling_rate,
+            set_debounce,
+            set_win_lock,
+            set_sleep_timers
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

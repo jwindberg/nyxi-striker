@@ -26,6 +26,21 @@ export interface Info {
   wireless: boolean;
 }
 
+export interface SleepTimers {
+  // seconds; only used on Bluetooth and 2.4 GHz
+  light_bt: number;
+  light_24g: number;
+  deep_bt: number;
+  deep_24g: number;
+}
+
+export interface Settings {
+  polling_hz: number;
+  debounce_ms: number;
+  win_lock: boolean;
+  sleep: SleepTimers;
+}
+
 export type Frame = boolean[][]; // frame[y][x], 9x9
 
 export interface Animation {
@@ -59,6 +74,11 @@ export const api = {
   setLighting: (zone: Zone, lighting: Lighting) => invoke<void>("set_lighting", { zone, lighting }),
   animations: () => invoke<Animation[]>("animations"),
   play: (frames: Frame[], delay: number) => invoke<void>("play", { frames, delay }),
+  getSettings: () => invoke<Settings>("get_settings"),
+  setPollingRate: (hz: number) => invoke<void>("set_polling_rate", { hz }),
+  setDebounce: (ms: number) => invoke<void>("set_debounce", { ms }),
+  setWinLock: (locked: boolean) => invoke<void>("set_win_lock", { locked }),
+  setSleepTimers: (timers: SleepTimers) => invoke<void>("set_sleep_timers", { timers }),
 };
 
 export const blankFrame = (): Frame => Array.from({ length: 9 }, () => Array(9).fill(false));

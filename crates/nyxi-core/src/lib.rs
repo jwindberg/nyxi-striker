@@ -6,12 +6,14 @@
 
 pub mod lighting;
 pub mod screen;
+pub mod settings;
 
 use hidapi::{HidApi, HidDevice};
 use std::{thread, time::Duration};
 
 pub use lighting::{Lighting, ModeInfo, Zone};
 pub use screen::{Animation, Frame};
+pub use settings::{Settings, SleepTimers};
 
 pub const VID: u16 = 0x3151;
 pub const PID_WIRED: u16 = 0x4015;

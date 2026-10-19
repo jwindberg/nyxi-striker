@@ -3,9 +3,10 @@
   import DotScreen from "$lib/DotScreen.svelte";
   import LightingPanel from "$lib/LightingPanel.svelte";
   import ScreenPanel from "$lib/ScreenPanel.svelte";
+  import SettingsPanel from "$lib/SettingsPanel.svelte";
   import { api, type Frame, type Info } from "$lib/api";
 
-  let tab = $state<"lighting" | "screen">("lighting");
+  let tab = $state<"lighting" | "screen" | "settings">("lighting");
   let info = $state<Info | null>(null);
   let connectError = $state("");
   // What we last sent to the screen; drawn over the screen in the keyboard picture.
@@ -27,7 +28,7 @@
 </script>
 
 <main>
-  <div class="hero">
+  <header>
     <div class="keyboard">
       <img src="/img/ca01.png" alt="NYXI CA01 Striker keyboard" />
       {#if shown}
@@ -35,22 +36,22 @@
       {/if}
     </div>
     <div class="status">
+      <h1>CA01 Striker</h1>
       {#if info}
-        <span class="dot ok"></span>
-        CA01 connected · {info.wireless ? "2.4 GHz" : "wired"} · firmware {version(info.firmware)}
+        <p><span class="dot ok"></span>Connected · {info.wireless ? "2.4 GHz" : "wired"} · firmware {version(info.firmware)}</p>
       {:else if connectError}
-        <span class="dot bad"></span>
-        {connectError}
+        <p><span class="dot bad"></span>{connectError}</p>
         <button class="link" onclick={connect}>Retry</button>
       {:else}
-        Looking for the keyboard…
+        <p>Looking for the keyboard…</p>
       {/if}
     </div>
-  </div>
+  </header>
 
   <nav>
     <button class:active={tab === "lighting"} onclick={() => (tab = "lighting")}>Lighting</button>
     <button class:active={tab === "screen"} onclick={() => (tab = "screen")}>Screen</button>
+    <button class:active={tab === "settings"} onclick={() => (tab = "settings")}>Settings</button>
   </nav>
 
   {#if tab === "lighting"}
@@ -58,44 +59,29 @@
       <LightingPanel zone="main" title="Backlight" />
       <LightingPanel zone="side" title="Second zone" note="The keyboard's second lighting setting. Which lights it drives on the CA01 is still unknown." />
     </div>
-  {:else}
+  {:else if tab === "screen"}
     <ScreenPanel onshow={(frames, delay) => (shown = { frames, delay })} />
+  {:else}
+    <SettingsPanel {info} />
   {/if}
 </main>
 
 <style>
-  :global(:root) {
-    --bg: #15163a;
-    --panel: #20225a;
-    --panel-2: #2a2c72;
-    --line: #3a3d8f;
-    --text: #eef0ff;
-    --muted: #a6a9d6;
-    --accent: #f5c400;
-    --accent-edge: #b88f00;
-    --key: #d7d9e2;
-    --key-edge: #a4a7b4;
-    --key-text: #23243f;
-    --red-text: #ff8a8f;
-    --screen: #414243;
-    color-scheme: dark;
-  }
-  :global(body) {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  }
   main {
     max-width: 980px;
     margin: 0 auto;
-    padding: 18px 20px 32px;
+    padding: 16px 20px 32px;
   }
-  .hero {
-    margin-bottom: 14px;
+  header {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin-bottom: 10px;
   }
   .keyboard {
     position: relative;
+    width: 420px;
+    flex-shrink: 0;
   }
   .keyboard img {
     display: block;
@@ -113,19 +99,24 @@
     padding: 0.35% 0.25%;
     box-sizing: border-box;
   }
-  .status {
+  h1 {
+    margin: 0 0 6px;
+    font-size: 1.3rem;
+    letter-spacing: 0.05em;
+  }
+  .status p {
     display: flex;
     align-items: center;
     gap: 8px;
-    justify-content: center;
+    margin: 0;
     color: var(--muted);
     font-size: 0.88rem;
-    margin-top: 6px;
   }
   .dot {
     width: 9px;
     height: 9px;
     border-radius: 50%;
+    flex-shrink: 0;
   }
   .ok {
     background: #48d16b;
@@ -156,13 +147,5 @@
   .stack {
     display: grid;
     gap: 14px;
-  }
-  .link {
-    background: none;
-    border: none;
-    color: var(--accent);
-    cursor: pointer;
-    font: inherit;
-    text-decoration: underline;
   }
 </style>

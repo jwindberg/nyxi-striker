@@ -126,92 +126,19 @@
       </div>
     </div>
   {:else if !error}
-    <p class="muted">Reading the keyboard…</p>
+    <p class="note">Reading the keyboard…</p>
   {/if}
 </section>
 
 <style>
-  .panel {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 18px 20px 20px;
-  }
   header {
     margin-bottom: 14px;
-  }
-  h2 {
-    margin: 0;
-    font-size: 1.05rem;
-    letter-spacing: 0.04em;
-  }
-  .note,
-  .muted {
-    margin: 4px 0 0;
-    color: var(--muted);
-    font-size: 0.85rem;
-  }
-  .error {
-    color: var(--red-text);
-    font-size: 0.9rem;
-  }
-  .field {
-    display: block;
-    margin-bottom: 14px;
-  }
-  .label {
-    display: block;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 7px;
-  }
-  .label b {
-    color: var(--text);
   }
   .selects,
   .sliders {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0 24px;
-  }
-  .inactive {
-    opacity: 0.35;
-    pointer-events: none;
-  }
-  /* appearance: none so every platform's web engine draws it the same way. */
-  select {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 100%;
-    background-color: var(--panel-2);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23f5c400' stroke-width='2'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    color: var(--text);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 7px 34px 7px 11px;
-    font: inherit;
-    font-size: 0.88rem;
-    line-height: 1.3;
-    cursor: pointer;
-  }
-  select:hover:not(:disabled) {
-    border-color: var(--muted);
-  }
-  select:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
-  option {
-    background: var(--panel-2);
-    color: var(--text);
-  }
-  input[type="range"] {
-    width: 100%;
-    accent-color: var(--accent);
   }
   .swatches {
     display: flex;
@@ -245,13 +172,5 @@
     height: 44px;
     opacity: 0;
     cursor: pointer;
-  }
-  .link {
-    background: none;
-    border: none;
-    color: var(--accent);
-    cursor: pointer;
-    font: inherit;
-    text-decoration: underline;
   }
 </style>

@@ -83,44 +83,12 @@
 </section>
 
 <style>
-  .panel {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 18px 20px 20px;
-  }
   header {
     display: flex;
     gap: 16px;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 14px;
-  }
-  h2 {
-    margin: 0;
-    font-size: 1.05rem;
-    letter-spacing: 0.04em;
-  }
-  .note {
-    margin: 4px 0 0;
-    color: var(--muted);
-    font-size: 0.85rem;
-  }
-  .error {
-    color: var(--red-text);
-    font-size: 0.9rem;
-  }
-  .label {
-    display: block;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 7px;
-  }
-  .label b {
-    color: var(--text);
-    text-transform: none;
   }
   .now {
     display: grid;
@@ -131,10 +99,6 @@
     border-radius: 10px;
     padding: 12px 14px 4px;
     margin-bottom: 16px;
-  }
-  .speed input {
-    width: 100%;
-    accent-color: var(--accent);
   }
   .grid {
     display: grid;
@@ -173,17 +137,5 @@
   .name {
     font-size: 0.82rem;
     text-align: center;
-  }
-  .key {
-    background: var(--key);
-    color: var(--key-text);
-    border: none;
-    border-bottom: 3px solid var(--key-edge);
-    border-radius: 7px;
-    padding: 7px 12px;
-    font: inherit;
-    font-size: 0.85rem;
-    cursor: pointer;
-    white-space: nowrap;
   }
 </style>

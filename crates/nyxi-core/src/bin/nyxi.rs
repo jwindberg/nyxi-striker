@@ -4,6 +4,8 @@
 //!   nyxi light [main|side]    read a lighting zone
 //!   nyxi screen list          list the animation library
 //!   nyxi screen <name>        play a library animation on the screen
+//!   nyxi settings             polling rate, debounce, Windows-key lock, sleep timers
+//!   nyxi set polling <hz> | debounce <ms> | winlock <on|off> | sleep <lbt> <l24> <dbt> <d24>
 
 use nyxi_core::{lighting, screen, Keyboard, Zone};
 use std::process::exit;
@@ -46,10 +48,24 @@ fn run(args: &[&str]) -> nyxi_core::Result<()> {
             Keyboard::open()?.upload_frames(&anim.frames, anim.delay)?;
             println!("playing {}", anim.name);
         }
+        ["settings"] => println!("{:?}", Keyboard::open()?.settings()?),
+        ["set", "polling", hz] => Keyboard::open()?.set_polling_rate(num(hz)?)?,
+        ["set", "debounce", ms] => Keyboard::open()?.set_debounce(num(ms)?)?,
+        ["set", "winlock", v] => Keyboard::open()?.set_win_lock(*v == "on")?,
+        ["set", "sleep", a, b, c, d] => Keyboard::open()?.set_sleep_timers(&nyxi_core::SleepTimers {
+            light_bt: num(a)?,
+            light_24g: num(b)?,
+            deep_bt: num(c)?,
+            deep_24g: num(d)?,
+        })?,
         _ => {
-            eprintln!("usage: nyxi info | light [main|side] | screen list | screen <name>");
+            eprintln!("usage: nyxi info | light [main|side] | screen list | screen <name> | settings | set ...");
             exit(2);
         }
     }
     Ok(())
+}
+
+fn num<T: std::str::FromStr>(s: &str) -> nyxi_core::Result<T> {
+    s.parse().map_err(|_| nyxi_core::Error::Invalid(format!("not a number: {s}")))
 }
