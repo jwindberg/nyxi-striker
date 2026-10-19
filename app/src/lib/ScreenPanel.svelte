@@ -70,6 +70,11 @@
     open({ slug: a.slug, user: a.user, kind: a.kind, name: a.name, delay: a.delay, frames: a.frames });
   }
 
+  // Empties the custom slot again, as it was from the factory. Nothing to edit, so no editor.
+  function blank() {
+    send([blankFrame()], 0);
+  }
+
   function create(kind: Kind) {
     restore = lastShown;
     open({ slug: null, user: true, kind, name: "", delay: 10, frames: [blankFrame()] });
@@ -103,6 +108,12 @@
 
     {#snippet grid(items: LibraryItem[], kind: Kind)}
       <div class="grid">
+        {#if kind === "image"}
+          <button class="card" onclick={blank} title="Empty the custom slot, so the screen is dark there">
+            <div class="screen"><DotScreen frames={[blankFrame()]} /></div>
+            <span class="name">Blank</span>
+          </button>
+        {/if}
         {#each items as a (key(a))}
           <button class="card" onclick={() => choose(a)} title={a.about || a.name}>
             <div class="screen"><DotScreen frames={a.frames} delay={a.delay} /></div>
