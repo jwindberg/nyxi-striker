@@ -142,8 +142,4 @@
     color: var(--text);
     border-bottom-color: var(--accent);
   }
-  .stack {
-    display: grid;
-    gap: 14px;
-  }
 </style>
