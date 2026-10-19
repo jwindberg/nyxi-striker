@@ -11,11 +11,11 @@ What can be controlled, and how sure we are:
 | Feature | Commands | Status |
 | --- | --- | --- |
 | Backlight effect, speed, brightness, color | 0x07 set / 0x87 get | Verified read and write |
-| 9x9 dot-matrix screen, custom slot | 0x24 upload | Verified (still image) |
+| 9x9 dot-matrix screen, custom slot | 0x24 upload | Verified (still images and animations) |
 | Second lighting zone | 0x08 set / 0x88 get | Read verified; write from app code |
 | Firmware version, profile, polling rate, debounce, sleep | 0x80, 0x85, 0x84, 0x91, 0x92 get | Read verified |
 | Key remap, macros, setting polling rate, debounce, sleep | 0x13, 0x16, 0x04, 0x11, 0x12 | From app code only |
-| Choosing the screen's built-in animation | none found | Hardware key Fn + Right Ctrl only |
+| Choosing the screen's built-in animation | none found | Hardware key Fn + Left Ctrl only |
 
 Minimal working example (Python, Linux): read the current effect, then switch to Wave.
 
@@ -114,7 +114,7 @@ A GET command is its SET command plus 0x80, and every GET uses checksum BIT7. Th
 | 0x16 | 0x96 | MACRO_SIMPLE | Macro body in 56-byte chunks | Unverified |
 | 0x17 | 0x97 | CMD_AUTOOSEN | Not decoded | Get verified (reads 0) |
 | 0x24 | — | OLEDGIFDATA (9x9 screen) | See Dot-matrix screen | Verified |
-| 0x2B | 0xAB | OLEDEFFECT | For other models' screens | Not supported (request echoed) |
+| 0x2B | 0xAB | OLEDEFFECT | For other models' screens | Ignored (SET has no effect; GET returns a byte unrelated to the animation) |
 | — | 0x80 | REV (firmware) | Reply [1..2] little-endian, 0x0105 = 1.05 | Verified |
 | — | 0x83 | BATTERY | Reply [1] (reads 0 when wired) | Read only, meaning unverified |
 | — | 0x8F | INFOR (device id) | Reply [1..2] little-endian, 0x05C1 = 1473 = CA01 wired | Verified |
@@ -210,7 +210,7 @@ One trap in the app: when asked to put this zone into a music or screen mode, it
 
 ## 9x9 dot-matrix screen
 
-The screen is a 9x9 grid of single-color dots. The computer can only replace its one custom slot, which takes a still image or an animation sent with command 0x24. Sending a still image was verified on hardware: a heart displayed correctly. The built-in animations (Pac-Man face, jumping bird and others) can only be chosen on the keyboard.
+The screen is a 9x9 grid of single-color dots. The computer can only replace its one custom slot, which takes a still image or an animation sent with command 0x24. Verified on hardware: still images and multi-frame animations display correctly, and an upload immediately switches the screen to the custom slot, whatever it was showing. The built-in animations (jumping bird, Pac-Man, cat) can only be chosen on the keyboard, so a host app that wants a preset picker should upload its own animations.
 
 ### Upload packet
 
@@ -222,14 +222,14 @@ One packet per frame: an 8-byte header, then the frame's bitmap in bytes 8..63. 
 | 1 | Frame count minus 1 | 0 | N − 1 |
 | 2 | Chunk index within the frame | 0 | 0 |
 | 3 | Frame index | 0 | 0 to N − 1 |
-| 4 | Frame delay | 0 | 0 to 255; app default 50, units unverified |
+| 4 | Frame delay | 0 | 0 to 255, about 20 ms per unit (50 ≈ 1 frame/s, 10 ≈ 5 frames/s, observed by eye); app default 50 |
 | 5 | Layer | 0 | 0 |
 | 6 | Unused | 0 | 0 |
 | 7 | Checksum, BIT7 | 0xFF − sum of bytes 0..6 | same |
 | 8..25 | Bitmap, 18 bytes | see below | see below |
 | 26..63 | Padding | 0 | 0 |
 
-For an animation, send frames 0, 1, …, N − 1 in order, one packet each; the app waits 1 ms between them. The app allows up to 50 frames for this screen size. Animation upload follows the app's code but has not been seen playing on the keyboard yet.
+For an animation, send frames 0, 1, …, N − 1 in order, one packet each; the app waits 1 ms between them. The app allows up to 50 frames for this screen size. Verified: a 4-frame animation played in a loop.
 
 ### Bitmap packing
 
@@ -267,12 +267,11 @@ Column 0 is `1C` (rows 2, 3, 4 lit), and the second band's `01` at column 4 is t
 
 ### What the computer cannot do (as far as is known)
 
-- **Choose a built-in animation.** Fn + Right Ctrl cycles through the built-ins and the custom slot (the manual says Left Ctrl; the test keyboard used Right Ctrl). Cycling sent no USB event, and none of the readable settings changed, so no host command for it is known.
+- **Choose a built-in animation.** Fn + Left Ctrl cycles: jumping bird → custom slot → Pac-Man → cat → jumping bird (Fn + Right Ctrl does nothing). No host command for it is known: the OLEDEFFECT commands (0x2B/0xAB) are ignored. Earlier checks for a USB event or a changed setting were made while pressing Right Ctrl, so they did not actually cycle and should be repeated with Left Ctrl.
 - **Remove the custom slot.** It stays in the rotation. The nearest thing to deleting it is uploading an all-blank frame.
 - **Turn the screen off.** Fn + Page Down turns it on and off on the keyboard; no host command is known.
-- **Use the OLED commands.** 0x2B/0xAB and related commands are for other models' screens; the CA01 echoes them back unchanged.
+- **Use the OLED commands.** 0x2B/0xAB are for other models' screens. On the CA01, SET 0x2B with mode 0 (off) or 1 (on) changed nothing, and GET 0xAB returned `ab 06 …` or `ab 00 …` regardless of the animation shown.
 
-One observation, not confirmed: the heart appeared right after it was uploaded. It is unknown whether an upload also switches the screen to the custom slot.
 
 ## Other settings
 
@@ -396,7 +395,7 @@ How the app decodes `[a0, a1, a2]`:
 | `2C 00 00` | Screen clear finished |
 | `80 00 [1..3]` | Shortcut to open app 1..3 (used by other models) |
 
-The app debounces these by 500 ms and then re-reads the affected setting with a GET. Status: an earlier session recorded backlight events (a0 = 04, a1 = mode) on this keyboard. In a later test, cycling the screen animations with Fn + Right Ctrl produced no event. That test did not first confirm the listener could see any event, so treat "no screen event" as likely, not proven.
+The app debounces these by 500 ms and then re-reads the affected setting with a GET. Status: an earlier session recorded backlight events (a0 = 04, a1 = mode) on this keyboard. In a later test, pressing Fn + Right Ctrl produced no event, but that key combination does not cycle the screen (Fn + Left Ctrl does), so whether cycling sends an event is still unknown.
 
 ## Official app and the Linux driver
 
@@ -454,8 +453,8 @@ The app's "firmware update" downloads files from NYXI's servers and drives these
 
 ### Open questions
 
-- [ ] Does uploading to the screen switch it to the custom slot?
-- [ ] Do multi-frame screen animations play, and what unit is the frame delay?
+- [x] Does uploading to the screen switch it to the custom slot? Yes, immediately.
+- [x] Do multi-frame screen animations play, and what unit is the frame delay? Yes; about 20 ms per unit.
 - [ ] Is there any host command that chooses a built-in screen animation or turns the screen off?
 - [ ] What does the second lighting zone (0x08) light up on the CA01?
 - [ ] Do the GET replies work on macOS with the correct checksum?
