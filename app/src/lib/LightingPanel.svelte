@@ -72,25 +72,27 @@
   {/if}
 
   {#if light}
-    <div class="field">
-      <span class="label">Effect</span>
-      <div class="chips">
-        {#each modes as m (m.id)}
-          <button class="chip" class:active={m.id === light.mode} onclick={() => setMode(m)}>{m.name}</button>
-        {/each}
-      </div>
-    </div>
-
-    {#if mode && mode.options.length}
-      <div class="field">
-        <span class="label">Variant</span>
-        <div class="chips">
-          {#each mode.options as opt, i}
-            <button class="chip" class:active={light.option === i} onclick={() => { light!.option = i; apply(); }}>{opt}</button>
+    <div class="selects">
+      <label class="field">
+        <span class="label">Effect</span>
+        <select value={light.mode} onchange={(e) => setMode(modes.find((m) => m.id === Number(e.currentTarget.value))!)}>
+          {#each modes as m (m.id)}
+            <option value={m.id}>{m.name}</option>
           {/each}
-        </div>
-      </div>
-    {/if}
+        </select>
+      </label>
+
+      {#if mode && mode.options.length}
+        <label class="field">
+          <span class="label">Variant</span>
+          <select value={light.option} onchange={(e) => { light!.option = Number(e.currentTarget.value); apply(); }}>
+            {#each mode.options as opt, i}
+              <option value={i}>{opt}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
+    </div>
 
     {#if !isOff}
       <div class="sliders">
@@ -171,30 +173,22 @@
   .label b {
     color: var(--text);
   }
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+  .selects {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0 24px;
   }
-  .chip {
+  select {
+    width: 100%;
     background: var(--key);
     color: var(--key-text);
     border: none;
     border-bottom: 3px solid var(--key-edge);
     border-radius: 7px;
-    padding: 6px 11px;
+    padding: 7px 10px;
     font: inherit;
-    font-size: 0.85rem;
+    font-size: 0.92rem;
     cursor: pointer;
-  }
-  .chip:hover {
-    filter: brightness(1.06);
-  }
-  .chip.active {
-    background: var(--accent);
-    border-bottom-color: var(--accent-edge);
-    color: #1b1b1b;
-    font-weight: 600;
   }
   .sliders {
     display: grid;
