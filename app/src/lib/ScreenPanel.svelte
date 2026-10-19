@@ -67,6 +67,8 @@
   function choose(a: LibraryItem) {
     restore = { frames: a.frames, delay: a.delay };
     send(a.frames, a.delay);
+    // Blank (first in the collection) has nothing to look at, so it just empties the slot.
+    if (!a.user && a.slug === "img-0-blank") return;
     open({ slug: a.slug, user: a.user, kind: a.kind, name: a.name, delay: a.delay, frames: a.frames });
   }
 
