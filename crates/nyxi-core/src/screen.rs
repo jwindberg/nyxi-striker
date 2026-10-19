@@ -96,6 +96,36 @@ pub fn parse(slug: &str, text: &str) -> Animation {
     anim
 }
 
+/// Write an animation in the library text format (the inverse of `parse`).
+pub fn to_text(anim: &Animation) -> String {
+    let mut out = format!("; name: {}\n; delay: {}\n", anim.name.replace('\n', " "), anim.delay);
+    if !anim.about.is_empty() {
+        out += &format!("; about: {}\n", anim.about.replace('\n', " "));
+    }
+    for frame in &anim.frames {
+        out.push('\n');
+        for row in frame {
+            out.extend(row.iter().map(|&on| if on { '#' } else { '.' }));
+            out.push('\n');
+        }
+    }
+    out
+}
+
+/// A file-name-safe id from a display name: lowercase letters, digits and dashes.
+pub fn slugify(name: &str) -> String {
+    let mut slug = String::new();
+    for c in name.to_lowercase().chars() {
+        if c.is_ascii_alphanumeric() {
+            slug.push(c);
+        } else if !slug.ends_with('-') {
+            slug.push('-');
+        }
+    }
+    let slug: String = slug.trim_matches('-').chars().take(40).collect();
+    if slug.is_empty() { "screen".into() } else { slug }
+}
+
 include!(concat!(env!("OUT_DIR"), "/library.rs"));
 
 /// The animations bundled from animations/*.txt, sorted by file name.
@@ -113,6 +143,20 @@ mod tests {
         assert_eq!(heart.frames.len(), 1);
         let packed = pack(&heart.frames[0]);
         assert_eq!(packed, [0x1C, 0x3E, 0x7E, 0xFC, 0xFC, 0xFC, 0x7E, 0x3E, 0x1C, 0, 0, 0, 0, 1, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn text_round_trips() {
+        for a in library() {
+            let back = parse(&a.slug, &to_text(&a));
+            assert_eq!((back.name, back.delay, back.frames), (a.name, a.delay, a.frames));
+        }
+    }
+
+    #[test]
+    fn slugs_are_file_safe() {
+        assert_eq!(slugify("My Cat!  v2"), "my-cat-v2");
+        assert_eq!(slugify("../.."), "screen");
     }
 
     #[test]

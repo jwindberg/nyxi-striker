@@ -47,9 +47,16 @@ export interface Animation {
   slug: string;
   name: string;
   about: string;
-  delay: number; // ~20 ms units
+  delay: number; // ~20 ms units; the keyboard plays every frame at this one speed
   frames: Frame[];
 }
+
+// A library entry: built-in (read-only) or the user's own (editable, saved on this computer).
+export interface LibraryItem extends Animation {
+  user: boolean;
+}
+
+export const MAX_FRAMES = 50;
 
 export const COLOR_CUSTOM = 7;
 export const COLOR_RAINBOW = 8;
@@ -72,7 +79,11 @@ export const api = {
   modes: (zone: Zone) => invoke<ModeInfo[]>("modes", { zone }),
   getLighting: (zone: Zone) => invoke<Lighting>("get_lighting", { zone }),
   setLighting: (zone: Zone, lighting: Lighting) => invoke<void>("set_lighting", { zone, lighting }),
-  animations: () => invoke<Animation[]>("animations"),
+  library: () => invoke<LibraryItem[]>("library"),
+  saveScreen: (slug: string | null, name: string, delay: number, frames: Frame[]) =>
+    invoke<LibraryItem>("save_screen", { slug, name, delay, frames }),
+  deleteScreen: (slug: string) => invoke<void>("delete_screen", { slug }),
+  screensFolder: () => invoke<string>("screens_folder"),
   play: (frames: Frame[], delay: number) => invoke<void>("play", { frames, delay }),
   getSettings: () => invoke<Settings>("get_settings"),
   setPollingRate: (hz: number) => invoke<void>("set_polling_rate", { hz }),
@@ -85,3 +96,5 @@ export const blankFrame = (): Frame => Array.from({ length: 9 }, () => Array(9).
 
 export const toHex = ([r, g, b]: RGB) => "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
 export const fromHex = (hex: string): RGB => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as RGB;
+
+export const copyFrame = (f: Frame): Frame => f.map((row) => [...row]);
