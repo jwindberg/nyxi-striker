@@ -424,6 +424,8 @@ def wink():
 # ---------------------------------------------------------------- still images (one frame)
 
 IMAGES = {
+    # "0" sorts it first: by convention the collection starts with a blank screen.
+    "img-0-blank": ("Blank", "Nothing lit: the screen is dark", "\n".join(["." * W] * H)),
     "img-heart": ("Heart", "A heart", "\n".join(text_of(HEART_BIG).splitlines())),
     "img-smiley": ("Smiley", "A smiling face", SMILEY),
     "img-star": ("Star", "A five-pointed star", """
