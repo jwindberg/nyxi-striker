@@ -1,7 +1,7 @@
 <script lang="ts">
   // Images and animations. Choosing one shows it on the keyboard (in its custom slot, which
   // the screen switches to immediately) and opens it in the editor. Your own screens come
-  // first in each list; built-in ones are read-only and can be duplicated.
+  // first in each list; the ones included with the app are read-only and can be copied.
   import { onMount } from "svelte";
   import DotScreen from "./DotScreen.svelte";
   import ScreenEditor, { type Draft } from "./ScreenEditor.svelte";
@@ -19,7 +19,7 @@
   let folder = $state("");
   let error = $state("");
 
-  const key = (a: LibraryItem) => (a.user ? "mine:" : "builtin:") + a.slug;
+  const key = (a: LibraryItem) => (a.user ? "mine:" : "included:") + a.slug;
   let images = $derived(library.filter((a) => a.kind === "image"));
   let animations = $derived(library.filter((a) => a.kind === "animation"));
 

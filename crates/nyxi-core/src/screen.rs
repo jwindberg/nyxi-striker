@@ -1,5 +1,5 @@
 //! The 9x9 dot-matrix screen: uploads to its custom slot (OLEDGIFDATA 0x24), and the
-//! built-in animation library from animations/*.txt.
+//! library of images and animations included with the app, from animations/*.txt.
 
 use crate::{checksum, Error, Keyboard, Result};
 use serde::{Deserialize, Serialize};

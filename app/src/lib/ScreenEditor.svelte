@@ -1,7 +1,7 @@
 <script lang="ts">
   // The editor for one image or animation. Choosing a screen opens it here and shows it on
-  // the keyboard; every change is shown on the keyboard as you make it. Built-in screens are
-  // read-only: Copy makes your own version. An image is one frame; an animation keeps its
+  // the keyboard; every change is shown on the keyboard as you make it. Screens included with
+  // the app are read-only: Copy makes your own version. An image is one frame; an animation keeps its
   // frame strip and speed even at one frame. The keyboard plays every frame at one speed.
   import DotScreen from "./DotScreen.svelte";
   import { api, blankFrame, copyFrame, DELAY_UNIT_MS, MAX_FRAMES, type Frame, type Kind, type LibraryItem } from "./api";
@@ -167,7 +167,7 @@
     <div class="title">
       {#if readOnly}
         <h2>{name}</h2>
-        <p class="note">Built-in {animation ? "animation" : "image"}. It can't be changed; <b>Copy</b> it to make your own version.</p>
+        <p class="note">Included with the app. This {animation ? "animation" : "image"} can't be changed; <b>Copy</b> it to make your own version.</p>
       {:else}
         <span class="label">{saved ? "" : "New "}{animation ? "animation" : "image"}</span>
         <input class="text" type="text" bind:value={name} oninput={() => { dirty = true; confirmCancel = false; }} placeholder="Untitled" />

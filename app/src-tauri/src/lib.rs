@@ -48,7 +48,7 @@ async fn set_lighting(device: State<'_, Device>, zone: Zone, lighting: Lighting)
 struct LibraryItem {
     #[serde(flatten)]
     animation: Animation,
-    /// True for the user's own (editable) screens, false for the built-in ones.
+    /// True for the user's own (editable) screens, false for the ones included with the app.
     user: bool,
 }
 
@@ -83,8 +83,8 @@ fn user_screens(app: &AppHandle) -> Result<Vec<Animation>, String> {
 #[tauri::command]
 fn library(app: AppHandle) -> Result<Vec<LibraryItem>, String> {
     let user = user_screens(&app)?.into_iter().map(|animation| LibraryItem { animation, user: true });
-    let builtin = screen::library().into_iter().map(|animation| LibraryItem { animation, user: false });
-    Ok(user.chain(builtin).collect())
+    let included = screen::library().into_iter().map(|animation| LibraryItem { animation, user: false });
+    Ok(user.chain(included).collect())
 }
 
 /// Save a user screen. A new one (`slug` = None) gets a fresh id from its name.

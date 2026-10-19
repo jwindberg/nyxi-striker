@@ -55,7 +55,7 @@ export interface Animation {
   frames: Frame[];
 }
 
-// A library entry: built-in (read-only) or the user's own (editable, saved on this computer).
+// A library entry: included with the app (read-only) or the user's own (editable, saved on this computer).
 export interface LibraryItem extends Animation {
   user: boolean;
 }

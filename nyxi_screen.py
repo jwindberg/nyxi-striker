@@ -111,7 +111,7 @@ def library():
 
 
 def load(source):
-    """Built-in name, animations/ library name, or a file path -> text."""
+    """Name of a screen defined in this script, animations/ library name, or a file path -> text."""
     text = {"smiley": SMILEY, "heart": HEART, "blank": BLANK}.get(source)
     if text is not None:
         return text
