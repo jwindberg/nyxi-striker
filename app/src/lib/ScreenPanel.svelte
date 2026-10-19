@@ -6,7 +6,7 @@
   import { onMount } from "svelte";
   import DotScreen from "./DotScreen.svelte";
   import ScreenEditor from "./ScreenEditor.svelte";
-  import { api, blankFrame, DELAY_UNIT_MS, type Frame, type LibraryItem } from "./api";
+  import { api, blankFrame, type Frame, type LibraryItem } from "./api";
 
   let { onshow }: { onshow: (frames: Frame[], delay: number) => void } = $props();
 
@@ -16,13 +16,11 @@
   let selected = $state<LibraryItem | null>(null);
   let editing = $state<Draft | null>(null);
   let folder = $state("");
-  let delay = $state(50);
   let busy = $state(false);
   let confirmDelete = $state(false);
   let error = $state("");
 
   const key = (a: LibraryItem) => (a.user ? "mine:" : "builtin:") + a.slug;
-  let fps = $derived((1000 / (Math.max(1, delay) * DELAY_UNIT_MS)).toFixed(1));
   let mine = $derived(library.filter((a) => a.user));
   let images = $derived(library.filter((a) => !a.user && a.frames.length === 1));
   let animations = $derived(library.filter((a) => !a.user && a.frames.length > 1));
@@ -57,14 +55,7 @@
   function choose(a: LibraryItem) {
     selected = a;
     confirmDelete = false;
-    delay = a.delay;
     send(a.frames, a.delay);
-  }
-
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  function changeSpeed() {
-    clearTimeout(timer);
-    if (selected) timer = setTimeout(() => send(selected!.frames, delay), 400);
   }
 
   function clear() {
@@ -116,29 +107,22 @@
 
     {#if error}<p class="error">{error}</p>{/if}
 
-    <!-- Always present so the grid below never shifts; speed only applies to animations. -->
+    <!-- Always present so the grid below never shifts. Speed is set in the editor. -->
     <div class="now">
-      <div>
-        <span class="label">
-          {#if selected}{animated ? "Playing" : "Showing"} <b>{selected.name}</b>{:else}Nothing chosen yet{/if}
-        </span>
-        <!-- The same three buttons always; built-in screens can't be changed, only duplicated. -->
-        <div class="item-actions">
-          <button class="tool" disabled={!selected?.user} onclick={() => edit(selected!, false)}>Edit</button>
-          <button class="tool" disabled={!selected} onclick={() => edit(selected!, true)}>Duplicate</button>
-          <button class="tool" class:danger={confirmDelete} disabled={!selected?.user} onclick={remove}>{confirmDelete ? "Really delete?" : "Delete"}</button>
-        </div>
+      <span class="label">
+        {#if selected}{animated ? "Playing" : "Showing"} <b>{selected.name}</b>{:else}Nothing chosen yet{/if}
+      </span>
+      <!-- The same three buttons always; built-in screens can't be changed, only duplicated. -->
+      <div class="item-actions">
+        <button class="tool" disabled={!selected?.user} onclick={() => edit(selected!, false)}>Edit</button>
+        <button class="tool" disabled={!selected} onclick={() => edit(selected!, true)}>Duplicate</button>
+        <button class="tool" class:danger={confirmDelete} disabled={!selected?.user} onclick={remove}>{confirmDelete ? "Really delete?" : "Delete"}</button>
+      </div>
         <p class="hint">
           {#if !selected}Choose a screen below, or press <b>+ New</b> to draw your own.
           {:else if !selected.user}Built-in screens can't be changed. <b>Duplicate</b> one to make your own version.
           {:else}This one is yours: edit it, duplicate it, or delete it.{/if}
         </p>
-      </div>
-      <label class="speed" class:inactive={!animated}>
-        <span class="label">Speed <b>{animated ? fps : "–"}</b> frames/s</span>
-        <!-- Slider runs fast (left = slow) by inverting the delay. -->
-        <input type="range" min="-60" max="-2" value={-delay} disabled={!animated} oninput={(e) => { delay = -Number(e.currentTarget.value); changeSpeed(); }} />
-      </label>
     </div>
 
     {#snippet grid(items: LibraryItem[])}
@@ -215,10 +199,6 @@
     word-break: break-all;
   }
   .now {
-    display: grid;
-    grid-template-columns: 1fr minmax(200px, 1.4fr);
-    gap: 24px;
-    align-items: end;
     background: var(--panel-2);
     border-radius: 10px;
     padding: 12px 14px 4px;
