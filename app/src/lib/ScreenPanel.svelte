@@ -73,7 +73,7 @@
   }
 
   function edit(a: LibraryItem, asCopy: boolean) {
-    editing = { slug: asCopy ? null : a.slug, name: asCopy ? `${a.name} copy` : a.name, delay: a.delay, frames: a.frames };
+    editing = { slug: asCopy ? null : a.slug, name: asCopy ? `${a.name} 2` : a.name, delay: a.delay, frames: a.frames };
   }
 
   async function remove() {
@@ -122,15 +122,17 @@
         <span class="label">
           {#if selected}{animated ? "Playing" : "Showing"} <b>{selected.name}</b>{:else}Nothing chosen yet{/if}
         </span>
-        <div class="item-actions" class:inactive={!selected}>
-          {#if selected?.user}
-            <button class="tool" onclick={() => edit(selected!, false)}>Edit</button>
-            <button class="tool" onclick={() => edit(selected!, true)}>Copy</button>
-            <button class="tool" class:danger={confirmDelete} onclick={remove}>{confirmDelete ? "Really delete?" : "Delete"}</button>
-          {:else}
-            <button class="tool" disabled={!selected} onclick={() => edit(selected!, true)}>Copy &amp; edit</button>
-          {/if}
+        <!-- The same three buttons always; built-in screens can't be changed, only duplicated. -->
+        <div class="item-actions">
+          <button class="tool" disabled={!selected?.user} onclick={() => edit(selected!, false)}>Edit</button>
+          <button class="tool" disabled={!selected} onclick={() => edit(selected!, true)}>Duplicate</button>
+          <button class="tool" class:danger={confirmDelete} disabled={!selected?.user} onclick={remove}>{confirmDelete ? "Really delete?" : "Delete"}</button>
         </div>
+        <p class="hint">
+          {#if !selected}Choose a screen below, or press <b>+ New</b> to draw your own.
+          {:else if !selected.user}Built-in screens can't be changed. <b>Duplicate</b> one to make your own version.
+          {:else}This one is yours: edit it, duplicate it, or delete it.{/if}
+        </p>
       </div>
       <label class="speed" class:inactive={!animated}>
         <span class="label">Speed <b>{animated ? fps : "–"}</b> frames/s</span>
@@ -178,8 +180,10 @@
     display: flex;
     gap: 6px;
   }
-  .item-actions {
-    margin-bottom: 8px;
+  .hint {
+    margin: 6px 0 8px;
+    font-size: 0.8rem;
+    color: var(--muted);
   }
   .tool {
     background: var(--panel);
