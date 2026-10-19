@@ -45,6 +45,13 @@
       {:else}
         <p>Looking for the keyboard…</p>
       {/if}
+      {#if tab === "screen"}
+        <div class="shortcuts">
+          <p>The keyboard's own animations, from the keyboard:</p>
+          <p><kbd>Fn</kbd> + <kbd>Left Ctrl</kbd> cycles jumping bird → custom slot → Pac-Man → cat</p>
+          <p><kbd>Fn</kbd> + <kbd>Page Down</kbd> turns the screen on or off</p>
+        </div>
+      {/if}
     </div>
   </header>
 
@@ -109,6 +116,27 @@
     margin: 0;
     color: var(--muted);
     font-size: 0.88rem;
+  }
+  .shortcuts {
+    margin-top: 10px;
+    padding-left: 10px;
+    border-left: 3px solid var(--accent);
+  }
+  .shortcuts p {
+    display: block;
+    margin: 0 0 3px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  kbd {
+    background: var(--key);
+    color: var(--key-text);
+    border-bottom: 2px solid var(--key-edge);
+    border-radius: 4px;
+    padding: 0 5px;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
   }
   .dot {
     width: 9px;
