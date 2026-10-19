@@ -97,17 +97,17 @@ A GET command is its SET command plus 0x80, and every GET uses checksum BIT7. Th
 
 | Set | Get | Name in app | Payload summary | Status |
 | --- | --- | --- | --- | --- |
-| 0x04 | 0x84 | REPORT (polling rate) | [1] profile, [2] 1=1000 Hz, 2=500, 4=250, 8=125 | Get verified (reads 1000 Hz) |
+| 0x04 | 0x84 | REPORT (polling rate) | [1] profile, [2] 1=1000 Hz, 2=500, 4=250, 8=125 | Verified (set 500, read back, restored) |
 | 0x05 | 0x85 | PROFILE | [1] profile 0..2 | Get verified (reads 0) |
-| 0x06 | 0x86 | KBOPTION | Option bits, see Other settings | Get verified |
+| 0x06 | 0x86 | KBOPTION | Option bits, see Other settings | Get verified; set verified for the Windows-key lock bit |
 | 0x07 | 0x87 | LEDPARAM (backlight) | See Backlight; set uses BIT8 | Verified |
 | 0x08 | 0x88 | SLEDPARAM (second zone) | Same layout as LEDPARAM; set uses BIT8 | Get verified |
 | 0x0A | 0x8A | KEYENABLE | Not decoded | Unverified |
 | 0x0C | 0x8C | USERPIC | Full per-key color picture, multi-packet | Unverified |
 | 0x0D | — | AUDIO | Music-reactive lighting frames | Unverified |
 | 0x0E | — | WINDOS | Screen-color lighting frames | Unverified |
-| 0x11 | 0x91 | DEBOUNCE | Set [2] ms; get reply [2] | Get verified |
-| 0x12 | 0x92 | SLEEPTIME | 16-bit seconds, see Other settings | Get verified |
+| 0x11 | 0x91 | DEBOUNCE | Set [2] ms; get reply [2] | Verified (set 3, read back, restored to 1) |
+| 0x12 | 0x92 | SLEEPTIME | 16-bit seconds, see Other settings | Verified (changed, read back, restored) |
 | 0x13 | 0x93 | KEYMATRIX_SIMPLE | One key remap, see Other settings | Unverified |
 | 0x14 | 0x94 | USERPIC_SIMPLE | One key's custom color: [1] slot, [2] key index, [8..10] RGB | Unverified |
 | 0x15 | 0x95 | FN_SIMPLE | One Fn-layer key remap | Unverified |
@@ -275,7 +275,7 @@ Column 0 is `1C` (rows 2, 3, 4 lit), and the second band's `01` at column 4 is t
 
 ## Other settings
 
-These layouts are taken from the official app's code for the CA01. The GET replies listed as verified in the command table were read on hardware; no SET in this section has been tested. Unless stated otherwise, every packet is 64 bytes with a BIT7 checksum at byte 7, and the payload starts at byte 1 or byte 8 as shown.
+These layouts are taken from the official app's code for the CA01. The GET replies listed as verified in the command table were read on hardware. SETs verified on hardware (written, read back, restored): polling rate, debounce, sleep timers, and the Windows-key lock bit (also confirmed by the key itself). The other SETs in this section are untested. Unless stated otherwise, every packet is 64 bytes with a BIT7 checksum at byte 7, and the payload starts at byte 1 or byte 8 as shown.
 
 ### Profile
 
@@ -291,7 +291,7 @@ Set: `06 [profile] [flags] [fnMatrix] [powerSave]`; get: `86 [profile]` → the 
 
 | Flags bit | Meaning when 1 |
 | --- | --- |
-| 0 (0x01) | Windows key locked |
+| 0 (0x01) | Windows key locked (verified: the key stops working) |
 | 1 (0x02) | Mac mode (as decoded on read) |
 | 3 (0x08) | WASD and arrow keys swapped |
 | 4 (0x10) | Backlight off |
