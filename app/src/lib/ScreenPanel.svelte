@@ -1,30 +1,27 @@
 <script lang="ts">
-  // The image and animation library: everything previews live; choosing one uploads it to
-  // the keyboard's custom slot, which the screen switches to immediately. An image is
-  // simply a one-frame animation. The user's own screens can be created, edited and
-  // deleted; built-in ones can be copied and then edited.
+  // Images and animations. Choosing one shows it on the keyboard (in its custom slot, which
+  // the screen switches to immediately) and opens it in the editor. Your own screens come
+  // first in each list; built-in ones are read-only and can be duplicated.
   import { onMount } from "svelte";
   import DotScreen from "./DotScreen.svelte";
-  import ScreenEditor from "./ScreenEditor.svelte";
-  import { api, blankFrame, type Frame, type LibraryItem } from "./api";
+  import ScreenEditor, { type Draft } from "./ScreenEditor.svelte";
+  import { api, blankFrame, type Frame, type Kind, type LibraryItem } from "./api";
 
   let { onshow }: { onshow: (frames: Frame[], delay: number) => void } = $props();
 
-  type Draft = { slug: string | null; name: string; delay: number; frames: Frame[] };
-
   let library = $state<LibraryItem[]>([]);
-  let selected = $state<LibraryItem | null>(null);
   let editing = $state<Draft | null>(null);
+  // Bumped for every editor opened, so Duplicate starts a fresh one.
+  let editorKey = $state(0);
+  // What the keyboard showed before the editor opened; Cancel puts it back.
+  let restore: { frames: Frame[]; delay: number } | null = null;
+  let lastShown: { frames: Frame[]; delay: number } | null = null;
   let folder = $state("");
-  let busy = $state(false);
-  let confirmDelete = $state(false);
   let error = $state("");
 
   const key = (a: LibraryItem) => (a.user ? "mine:" : "builtin:") + a.slug;
-  let mine = $derived(library.filter((a) => a.user));
-  let images = $derived(library.filter((a) => !a.user && a.frames.length === 1));
-  let animations = $derived(library.filter((a) => !a.user && a.frames.length > 1));
-  let animated = $derived((selected?.frames.length ?? 0) > 1);
+  let images = $derived(library.filter((a) => a.kind === "image"));
+  let animations = $derived(library.filter((a) => a.kind === "animation"));
 
   onMount(async () => {
     await reload();
@@ -39,111 +36,91 @@
     }
   }
 
-  async function send(frames: Frame[], d: number) {
-    busy = true;
-    try {
-      await api.play(frames, d);
-      error = "";
-      onshow(frames, d);
-    } catch (e) {
-      error = String(e);
-    } finally {
-      busy = false;
+  // Uploads are queued so a burst of edits can't interleave on the keyboard; only the
+  // latest pending one is sent.
+  let sending = false;
+  let pending: { frames: Frame[]; delay: number } | null = null;
+  async function send(frames: Frame[], delay: number) {
+    pending = { frames, delay };
+    onshow(frames, delay);
+    if (sending) return;
+    sending = true;
+    while (pending) {
+      const next = pending;
+      pending = null;
+      try {
+        await api.play(next.frames, next.delay);
+        lastShown = next;
+        error = "";
+      } catch (e) {
+        error = String(e);
+      }
     }
+    sending = false;
+  }
+
+  function open(draft: Draft) {
+    editing = draft;
+    editorKey += 1;
   }
 
   function choose(a: LibraryItem) {
-    selected = a;
-    confirmDelete = false;
+    restore = { frames: a.frames, delay: a.delay };
     send(a.frames, a.delay);
+    open({ slug: a.slug, user: a.user, kind: a.kind, name: a.name, delay: a.delay, frames: a.frames });
   }
 
-  function clear() {
-    selected = null;
-    send([blankFrame()], 0);
+  function create(kind: Kind) {
+    restore = lastShown;
+    open({ slug: null, user: true, kind, name: "", delay: 10, frames: [blankFrame()] });
   }
 
-  function edit(a: LibraryItem, asCopy: boolean) {
-    editing = { slug: asCopy ? null : a.slug, name: asCopy ? `${a.name} 2` : a.name, delay: a.delay, frames: a.frames };
+  function cancel(changed: boolean) {
+    editing = null;
+    if (changed && restore) send(restore.frames, restore.delay);
   }
 
-  async function remove() {
-    if (!selected?.user) return;
-    if (!confirmDelete) {
-      confirmDelete = true;
-      return;
-    }
-    try {
-      await api.deleteScreen(selected.slug);
-      selected = null;
-      confirmDelete = false;
-      await reload();
-    } catch (e) {
-      error = String(e);
-    }
-  }
-
-  async function saved(item: LibraryItem) {
+  async function closeAndReload() {
     editing = null;
     await reload();
-    choose(library.find((a) => key(a) === key(item)) ?? item);
+  }
+
+  function duplicate(copy: Draft) {
+    // The copy is shown as it is; Cancel on it goes back to what was showing before.
+    restore = lastShown;
+    send(copy.frames, copy.kind === "animation" ? copy.delay : 0);
+    open(copy);
   }
 </script>
 
 {#if editing}
-  <ScreenEditor draft={editing} onsaved={saved} onclose={() => (editing = null)} onsend={send} />
+  {#key editorKey}
+    <ScreenEditor draft={editing} onsaved={closeAndReload} ondeleted={closeAndReload} oncancel={cancel} onduplicate={duplicate} onsend={send} />
+  {/key}
 {:else}
   <section class="panel">
-    <header>
-      <div>
-        <h2>Screen</h2>
-        <p class="note">Choosing an image or animation shows it on the keyboard right away, in its custom slot.</p>
-      </div>
-      <div class="actions">
-        <button class="key" onclick={() => (editing = { slug: null, name: "", delay: 10, frames: [blankFrame()] })}>+ New</button>
-        <button class="key" onclick={clear} disabled={busy}>Clear screen</button>
-      </div>
-    </header>
-
     {#if error}<p class="error">{error}</p>{/if}
 
-    <!-- Always present so the grid below never shifts. Speed is set in the editor. -->
-    <div class="now">
-      <span class="label">
-        {#if selected}{animated ? "Playing" : "Showing"} <b>{selected.name}</b>{:else}Nothing chosen yet{/if}
-      </span>
-      <!-- The same three buttons always; built-in screens can't be changed, only duplicated. -->
-      <div class="item-actions">
-        <button class="tool" disabled={!selected?.user} onclick={() => edit(selected!, false)}>Edit</button>
-        <button class="tool" disabled={!selected} onclick={() => edit(selected!, true)}>Duplicate</button>
-        <button class="tool" class:danger={confirmDelete} disabled={!selected?.user} onclick={remove}>{confirmDelete ? "Really delete?" : "Delete"}</button>
-      </div>
-        <p class="hint">
-          {#if !selected}Choose a screen below, or press <b>+ New</b> to draw your own.
-          {:else if !selected.user}Built-in screens can't be changed. <b>Duplicate</b> one to make your own version.
-          {:else}This one is yours: edit it, duplicate it, or delete it.{/if}
-        </p>
-    </div>
-
-    {#snippet grid(items: LibraryItem[])}
+    {#snippet grid(items: LibraryItem[], kind: Kind)}
       <div class="grid">
         {#each items as a (key(a))}
-          <button class="card" class:active={selected && key(selected) === key(a)} onclick={() => choose(a)} title={a.about || a.name} disabled={busy}>
+          <button class="card" onclick={() => choose(a)} title={a.about || a.name}>
             <div class="screen"><DotScreen frames={a.frames} delay={a.delay} /></div>
             <span class="name">{a.name}</span>
+            {#if a.user}<span class="mine">yours</span>{/if}
           </button>
         {/each}
+        <button class="card new" onclick={() => create(kind)}>
+          <div class="screen plus">+</div>
+          <span class="name">New {kind}</span>
+        </button>
       </div>
     {/snippet}
 
-    {#if mine.length}
-      <h3>Mine</h3>
-      {@render grid(mine)}
-    {/if}
     <h3>Images</h3>
-    {@render grid(images)}
+    {@render grid(images, "image")}
     <h3>Animations</h3>
-    {@render grid(animations)}
+    {@render grid(animations, "animation")}
 
     {#if folder}
       <p class="note folder">Your own images and animations are saved on this computer in <code>{folder}</code>. Copy the files there to use them on another computer.</p>
@@ -152,41 +129,6 @@
 {/if}
 
 <style>
-  header {
-    display: flex;
-    gap: 16px;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 14px;
-  }
-  .actions,
-  .item-actions {
-    display: flex;
-    gap: 6px;
-  }
-  .hint {
-    margin: 6px 0 8px;
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
-  .tool {
-    background: var(--panel);
-    color: var(--text);
-    border: 1px solid var(--line);
-    border-radius: 7px;
-    padding: 4px 10px;
-    font: inherit;
-    font-size: 0.82rem;
-    cursor: pointer;
-  }
-  .tool:disabled {
-    opacity: 0.4;
-  }
-  .danger {
-    background: #e5484d;
-    border-color: #a8262b;
-    color: white;
-  }
   .folder {
     margin-top: 18px;
   }
@@ -198,19 +140,16 @@
     user-select: all;
     word-break: break-all;
   }
-  .now {
-    background: var(--panel-2);
-    border-radius: 10px;
-    padding: 12px 14px 4px;
-    margin-bottom: 16px;
-  }
   h3 {
-    margin: 18px 0 10px;
+    margin: 4px 0 10px;
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--muted);
     font-weight: 600;
+  }
+  .grid + h3 {
+    margin-top: 22px;
   }
   .grid {
     display: grid;
@@ -218,6 +157,7 @@
     gap: 12px;
   }
   .card {
+    position: relative;
     background: var(--panel-2);
     border: 2px solid transparent;
     border-radius: 12px;
@@ -231,13 +171,7 @@
     gap: 7px;
   }
   .card:hover {
-    border-color: var(--line);
-  }
-  .card.active {
     border-color: var(--accent);
-  }
-  .card:disabled {
-    cursor: progress;
   }
   .screen {
     width: 100%;
@@ -245,9 +179,33 @@
     background: var(--screen);
     border-radius: 8px;
     padding: 6%;
+    box-sizing: border-box;
+  }
+  .new {
+    background: none;
+    border: 2px dashed var(--line);
+  }
+  .plus {
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    color: var(--muted);
   }
   .name {
     font-size: 0.82rem;
     text-align: center;
+  }
+  .mine {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: var(--accent);
+    color: #1b1b1b;
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 5px;
   }
 </style>

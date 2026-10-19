@@ -14,11 +14,21 @@ const SET_OLEDGIFDATA: u8 = 0x24;
 /// One 9x9 frame, `frame[y][x]`, y = 0 at the top.
 pub type Frame = [[bool; SIZE]; SIZE];
 
+/// What a screen is meant to be. Stored rather than guessed, so an animation that is down
+/// to one frame stays an animation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Kind {
+    Image,
+    Animation,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Animation {
     pub slug: String,
     pub name: String,
     pub about: String,
+    pub kind: Kind,
     /// Frame delay in ~20 ms units.
     pub delay: u8,
     pub frames: Vec<Frame>,
@@ -63,10 +73,11 @@ impl Keyboard {
     }
 }
 
-/// Parse the library text format: ';' lines are metadata ("; name: ...", "; delay: N",
-/// "; about: ..."), then 9-line frames of '#' (on) and '.' (off) separated by blank lines.
+/// Parse the library text format: ';' lines are metadata ("; name: ...", "; type: image" or
+/// "; type: animation", "; delay: N", "; about: ..."), then 9-line frames of '#' (on) and '.' (off) separated by blank lines.
 pub fn parse(slug: &str, text: &str) -> Animation {
-    let mut anim = Animation { slug: slug.into(), name: slug.into(), about: String::new(), delay: 50, frames: vec![] };
+    let mut anim = Animation { slug: slug.into(), name: slug.into(), about: String::new(), kind: Kind::Image, delay: 50, frames: vec![] };
+    let mut kind = None;
     let mut rows: Vec<[bool; SIZE]> = vec![];
     for line in text.lines().chain(std::iter::once("")) {
         if let Some(meta) = line.strip_prefix(';') {
@@ -75,6 +86,7 @@ pub fn parse(slug: &str, text: &str) -> Animation {
                 match key.trim() {
                     "name" => anim.name = value.into(),
                     "about" => anim.about = value.into(),
+                    "type" => kind = Some(if value == "image" { Kind::Image } else { Kind::Animation }),
                     "delay" => anim.delay = value.parse().unwrap_or(50),
                     _ => {}
                 }
@@ -93,12 +105,18 @@ pub fn parse(slug: &str, text: &str) -> Animation {
             anim.frames.push(frame);
         }
     }
+    // Files without a type line: one frame is an image.
+    anim.kind = kind.unwrap_or(if anim.frames.len() > 1 { Kind::Animation } else { Kind::Image });
     anim
 }
 
 /// Write an animation in the library text format (the inverse of `parse`).
 pub fn to_text(anim: &Animation) -> String {
-    let mut out = format!("; name: {}\n; delay: {}\n", anim.name.replace('\n', " "), anim.delay);
+    let kind = match anim.kind {
+        Kind::Image => "image",
+        Kind::Animation => "animation",
+    };
+    let mut out = format!("; name: {}\n; type: {kind}\n; delay: {}\n", anim.name.replace('\n', " "), anim.delay);
     if !anim.about.is_empty() {
         out += &format!("; about: {}\n", anim.about.replace('\n', " "));
     }
@@ -149,8 +167,16 @@ mod tests {
     fn text_round_trips() {
         for a in library() {
             let back = parse(&a.slug, &to_text(&a));
-            assert_eq!((back.name, back.delay, back.frames), (a.name, a.delay, a.frames));
+            assert_eq!((back.name, back.kind, back.delay, back.frames), (a.name, a.kind, a.delay, a.frames));
         }
+    }
+
+    #[test]
+    fn kind_is_kept_for_one_frame_animations() {
+        let mut a = parse("x", ".........\n");
+        assert_eq!(a.kind, Kind::Image);
+        a.kind = Kind::Animation;
+        assert_eq!(parse("x", &to_text(&a)).kind, Kind::Animation);
     }
 
     #[test]

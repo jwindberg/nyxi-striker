@@ -12,7 +12,7 @@ use hidapi::{HidApi, HidDevice};
 use std::{thread, time::Duration};
 
 pub use lighting::{Lighting, ModeInfo, Zone};
-pub use screen::{Animation, Frame};
+pub use screen::{Animation, Frame, Kind};
 pub use settings::{Settings, SleepTimers};
 
 pub const VID: u16 = 0x3151;

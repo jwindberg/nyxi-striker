@@ -33,7 +33,7 @@ Images and animations you make in the app's editor are saved on that computer on
 | macOS | `~/Library/Application Support/com.jwindberg.nyxi/screens/` |
 | Windows | `%APPDATA%\com.jwindberg.nyxi\screens\` |
 
-The app also shows the exact folder at the bottom of its Screen tab. To use them on another computer, copy the `.txt` files into that computer's folder (for example `scp ~/.local/share/com.jwindberg.nyxi/screens/*.txt othermachine:...`) and reopen the Screen tab. A file can also be added to `animations/` to make it a built-in for everyone.
+The app also shows the exact folder at the bottom of its Screen tab. To use them on another computer, copy the `.txt` files into that computer's folder (for example `scp ~/.local/share/com.jwindberg.nyxi/screens/*.txt othermachine:...`) and reopen the Screen tab. A file can also be added to `animations/` to make it a built-in for everyone. Each file is plain text: `; name:`, `; type: image` or `; type: animation`, and `; delay:` lines, then 9×9 frames of `#` and `.`; without a type line, one frame means an image.
 
 ## Running the official NYXI app on macOS or Linux
 

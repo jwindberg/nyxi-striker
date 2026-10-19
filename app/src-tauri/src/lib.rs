@@ -4,7 +4,7 @@
 //! The user's own screen images and animations are text files (the animations/ format) in
 //! <app data>/screens; see the README for where that is on each platform.
 
-use nyxi_core::{lighting, screen, Animation, Frame, Info, Keyboard, Lighting, ModeInfo, Settings, SleepTimers, Zone};
+use nyxi_core::{lighting, screen, Animation, Frame, Info, Kind, Keyboard, Lighting, ModeInfo, Settings, SleepTimers, Zone};
 use serde::Serialize;
 use std::{fs, path::PathBuf, sync::Mutex};
 use tauri::{AppHandle, Manager, State};
@@ -89,8 +89,8 @@ fn library(app: AppHandle) -> Result<Vec<LibraryItem>, String> {
 
 /// Save a user screen. A new one (`slug` = None) gets a fresh id from its name.
 #[tauri::command]
-fn save_screen(app: AppHandle, slug: Option<String>, name: String, delay: u8, frames: Vec<Frame>) -> Result<LibraryItem, String> {
-    if frames.is_empty() || frames.len() > screen::MAX_FRAMES {
+fn save_screen(app: AppHandle, slug: Option<String>, name: String, kind: Kind, delay: u8, frames: Vec<Frame>) -> Result<LibraryItem, String> {
+    if frames.is_empty() || frames.len() > screen::MAX_FRAMES || (kind == Kind::Image && frames.len() > 1) {
         return Err(format!("an animation needs 1 to {} frames", screen::MAX_FRAMES));
     }
     let name = if name.trim().is_empty() { "Untitled".to_string() } else { name.trim().to_string() };
@@ -102,7 +102,7 @@ fn save_screen(app: AppHandle, slug: Option<String>, name: String, delay: u8, fr
             (1..).map(|n| if n == 1 { base.clone() } else { format!("{base}-{n}") }).find(|s| !taken.contains(s)).unwrap()
         }
     };
-    let animation = Animation { slug: slug.clone(), name, about: String::new(), delay, frames };
+    let animation = Animation { slug: slug.clone(), name, about: String::new(), kind, delay, frames };
     let path = screen_file(&app, &slug)?;
     fs::write(&path, screen::to_text(&animation)).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
     Ok(LibraryItem { animation, user: true })

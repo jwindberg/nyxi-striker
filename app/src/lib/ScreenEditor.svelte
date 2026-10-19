@@ -1,25 +1,30 @@
 <script lang="ts">
-  // Draw a 9x9 image, or an animation of up to 50 frames. Dragging paints; a drag that starts
-  // on a lit dot erases instead. The previous frame shows faintly ("onion skin") to help line
-  // up motion. The keyboard plays every frame at one speed.
+  // The editor for one image or animation. Choosing a screen opens it here and shows it on
+  // the keyboard; every change is shown on the keyboard as you make it. Built-in screens are
+  // read-only: Duplicate makes your own copy. An image is one frame; an animation keeps its
+  // frame strip and speed even at one frame. The keyboard plays every frame at one speed.
   import DotScreen from "./DotScreen.svelte";
-  import { api, blankFrame, copyFrame, DELAY_UNIT_MS, MAX_FRAMES, type Frame, type LibraryItem } from "./api";
+  import { api, blankFrame, copyFrame, DELAY_UNIT_MS, MAX_FRAMES, type Frame, type Kind, type LibraryItem } from "./api";
 
-  type Draft = { slug: string | null; name: string; delay: number; frames: Frame[] };
+  export type Draft = { slug: string | null; user: boolean; kind: Kind; name: string; delay: number; frames: Frame[] };
 
   let {
     draft,
     onsaved,
-    onclose,
+    ondeleted,
+    oncancel,
+    onduplicate,
     onsend,
   }: {
     draft: Draft;
     onsaved: (item: LibraryItem) => void;
-    onclose: () => void;
-    onsend: (frames: Frame[], delay: number) => Promise<void>;
+    ondeleted: () => void;
+    oncancel: (changed: boolean) => void;
+    onduplicate: (copy: Draft) => void;
+    onsend: (frames: Frame[], delay: number) => void;
   } = $props();
 
-  // The editor works on its own copy; the original stays untouched until Save.
+  // The editor works on its own copy; the saved file stays untouched until Save.
   // svelte-ignore state_referenced_locally
   let name = $state(draft.name);
   // svelte-ignore state_referenced_locally
@@ -29,18 +34,28 @@
   let current = $state(0);
   let onion = $state(true);
   let dirty = $state(false);
-  let confirmDiscard = $state(false);
+  let confirmCancel = $state(false);
+  let confirmDelete = $state(false);
   let saving = $state(false);
   let error = $state("");
 
-  let animated = $derived(frames.length > 1);
+  // Fixed for the editor's lifetime (a new editor opens for each screen).
+  // svelte-ignore state_referenced_locally
+  const readOnly = !draft.user;
+  // svelte-ignore state_referenced_locally
+  const animation = draft.kind === "animation";
+  // svelte-ignore state_referenced_locally
+  const saved = draft.slug !== null;
   let fps = $derived((1000 / (Math.max(1, delay) * DELAY_UNIT_MS)).toFixed(1));
-  let previous = $derived(animated ? frames[(current - 1 + frames.length) % frames.length] : null);
+  let previous = $derived(animation && frames.length > 1 ? frames[(current - 1 + frames.length) % frames.length] : null);
+
+  const outgoing = () => ({ frames: frames.map(copyFrame), delay: animation ? delay : 0 });
 
   // ---- painting
   let paintValue: boolean | null = null;
 
   function paintStart(x: number, y: number, e: PointerEvent) {
+    if (readOnly) return;
     e.preventDefault();
     paintValue = !frames[current][y][x];
     paint(x, y);
@@ -51,9 +66,17 @@
     changed();
   }
 
+  // Every change goes to the keyboard shortly after it is made (uploads take a moment).
+  let timer: ReturnType<typeof setTimeout> | undefined;
   function changed() {
     dirty = true;
-    confirmDiscard = false;
+    confirmCancel = false;
+    confirmDelete = false;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const o = outgoing();
+      onsend(o.frames, o.delay);
+    }, 300);
   }
 
   // ---- whole-frame tools
@@ -91,18 +114,12 @@
   }
 
   // ---- actions
-  const outgoing = () => ({ frames: frames.map(copyFrame), delay: animated ? delay : 0 });
-
-  async function send() {
-    const o = outgoing();
-    await onsend(o.frames, o.delay);
-  }
-
   async function save() {
     saving = true;
     try {
       const o = outgoing();
-      const item = await api.saveScreen(draft.slug, name, o.delay, o.frames);
+      clearTimeout(timer);
+      const item = await api.saveScreen(draft.slug, name, draft.kind, o.delay, o.frames);
       dirty = false;
       onsaved(item);
     } catch (e) {
@@ -112,12 +129,34 @@
     }
   }
 
-  function close() {
-    if (dirty && !confirmDiscard) {
-      confirmDiscard = true;
+  function cancel() {
+    if (dirty && !confirmCancel) {
+      confirmCancel = true;
       return;
     }
-    onclose();
+    clearTimeout(timer);
+    oncancel(dirty);
+  }
+
+  // The copy includes any unsaved changes; this screen itself stays as it was saved.
+  function duplicate() {
+    clearTimeout(timer);
+    const o = outgoing();
+    onduplicate({ slug: null, user: true, kind: draft.kind, name: `Copy of ${name.trim() || "Untitled"}`, delay: delay, frames: o.frames });
+  }
+
+  async function remove() {
+    if (!confirmDelete) {
+      confirmDelete = true;
+      return;
+    }
+    try {
+      clearTimeout(timer);
+      await api.deleteScreen(draft.slug!);
+      ondeleted();
+    } catch (e) {
+      error = String(e);
+    }
   }
 </script>
 
@@ -125,18 +164,35 @@
 
 <section class="panel editor">
   <header>
-    <h2>{draft.slug ? "Edit" : "New"} {animated ? "animation" : "image"}</h2>
+    <div class="title">
+      {#if readOnly}
+        <h2>{name}</h2>
+        <p class="note">Built-in {animation ? "animation" : "image"}. It can't be changed; <b>Duplicate</b> it to make your own copy.</p>
+      {:else}
+        <span class="label">{saved ? "" : "New "}{animation ? "animation" : "image"}</span>
+        <input class="text" type="text" bind:value={name} oninput={() => { dirty = true; confirmCancel = false; }} placeholder="Untitled" />
+      {/if}
+    </div>
     <div class="actions">
-      <button class="key" onclick={send}>Send to keyboard</button>
-      <button class="key primary" onclick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
-      <button class="key" class:danger={confirmDiscard} onclick={close}>{confirmDiscard ? "Discard changes?" : "Close"}</button>
+      {#if !readOnly && saved}
+        <button class="key" class:danger={confirmDelete} onclick={remove}>{confirmDelete ? "Really delete?" : "Delete"}</button>
+      {/if}
+      {#if saved}
+        <button class="key" onclick={duplicate}>Duplicate</button>
+      {/if}
+      {#if readOnly}
+        <button class="key primary" onclick={cancel}>Done</button>
+      {:else}
+        <button class="key" class:danger={confirmCancel} onclick={cancel}>{confirmCancel ? "Discard changes?" : "Cancel"}</button>
+        <button class="key primary" onclick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+      {/if}
     </div>
   </header>
   {#if error}<p class="error">{error}</p>{/if}
 
   <div class="body">
     <div>
-      <div class="canvas" class:onion>
+      <div class="canvas" class:readonly={readOnly}>
         {#each frames[current] as row, y}
           {#each row as on, x}
             <button
@@ -144,80 +200,103 @@
               class:on
               class:ghost={!on && onion && previous?.[y][x]}
               aria-label={`dot ${x + 1},${y + 1}`}
+              disabled={readOnly}
               onpointerdown={(e) => paintStart(x, y, e)}
               onpointerenter={() => paint(x, y)}
             ></button>
           {/each}
         {/each}
       </div>
-      <div class="tools">
-        <button class="tool" onclick={clear} title="Clear this frame">Clear</button>
-        <button class="tool" onclick={invert} title="Swap lit and dark dots">Invert</button>
-        <button class="tool" onclick={flipH} title="Mirror left to right">Flip ↔</button>
-        <button class="tool" onclick={flipV} title="Mirror top to bottom">Flip ↕</button>
-        <span class="sep"></span>
-        <button class="tool" onclick={() => shift(-1, 0)} title="Shift left (wraps)">←</button>
-        <button class="tool" onclick={() => shift(1, 0)} title="Shift right (wraps)">→</button>
-        <button class="tool" onclick={() => shift(0, -1)} title="Shift up (wraps)">↑</button>
-        <button class="tool" onclick={() => shift(0, 1)} title="Shift down (wraps)">↓</button>
-      </div>
+      {#if !readOnly}
+        <div class="tools">
+          <button class="tool" onclick={clear} title="Clear this frame">Clear</button>
+          <button class="tool" onclick={invert} title="Swap lit and dark dots">Invert</button>
+          <button class="tool" onclick={flipH} title="Mirror left to right">Flip ↔</button>
+          <button class="tool" onclick={flipV} title="Mirror top to bottom">Flip ↕</button>
+          <span class="sep"></span>
+          <button class="tool" onclick={() => shift(-1, 0)} title="Shift left (wraps)">←</button>
+          <button class="tool" onclick={() => shift(1, 0)} title="Shift right (wraps)">→</button>
+          <button class="tool" onclick={() => shift(0, -1)} title="Shift up (wraps)">↑</button>
+          <button class="tool" onclick={() => shift(0, 1)} title="Shift down (wraps)">↓</button>
+        </div>
+      {/if}
     </div>
 
-    <div class="side">
-      <label class="field">
-        <span class="label">Name</span>
-        <input class="text" type="text" bind:value={name} oninput={changed} placeholder="Untitled" />
-      </label>
+    {#if animation}
+      <div class="side">
+        <div class="field">
+          <span class="label">Preview</span>
+          <div class="preview"><DotScreen {frames} {delay} /></div>
+        </div>
 
-      <div class="field">
-        <span class="label">Preview</span>
-        <div class="preview"><DotScreen frames={frames} {delay} /></div>
+        <label class="field" class:inactive={readOnly}>
+          <span class="label">Speed <b>{fps}</b> frames/s</span>
+          <!-- Slider runs fast (left = slow) by inverting the delay. -->
+          <input type="range" min="-60" max="-2" value={-delay} disabled={readOnly} oninput={(e) => { delay = -Number(e.currentTarget.value); changed(); }} />
+        </label>
+
+        {#if !readOnly}
+          <label class="check">
+            <input type="checkbox" bind:checked={onion} /> Show previous frame faintly
+          </label>
+        {/if}
       </div>
-
-      <label class="field" class:inactive={!animated}>
-        <span class="label">Speed <b>{animated ? fps : "–"}</b> frames/s</span>
-        <input type="range" min="-60" max="-2" value={-delay} disabled={!animated} oninput={(e) => { delay = -Number(e.currentTarget.value); changed(); }} />
-      </label>
-
-      <label class="check" class:inactive={!animated}>
-        <input type="checkbox" bind:checked={onion} disabled={!animated} /> Show previous frame faintly
-      </label>
-    </div>
+    {/if}
   </div>
 
-  <div class="frames">
-    <div class="frames-head">
-      <span class="label">Frames <b>{frames.length}</b> / {MAX_FRAMES}</span>
-      <div class="frame-tools">
-        <button class="tool" onclick={() => addFrame(false)} disabled={frames.length >= MAX_FRAMES}>+ Blank</button>
-        <button class="tool" onclick={() => addFrame(true)} disabled={frames.length >= MAX_FRAMES}>+ Copy</button>
-        <button class="tool" onclick={() => moveFrame(-1)} disabled={current === 0} title="Move earlier">◀ Move</button>
-        <button class="tool" onclick={() => moveFrame(1)} disabled={current === frames.length - 1} title="Move later">Move ▶</button>
-        <button class="tool" onclick={deleteFrame} disabled={frames.length < 2}>Delete frame</button>
+  {#if animation}
+    <div class="frames">
+      <div class="frames-head">
+        <span class="label">Frames <b>{frames.length}</b> / {MAX_FRAMES}</span>
+        {#if !readOnly}
+          <div class="frame-tools">
+            <button class="tool" onclick={() => addFrame(false)} disabled={frames.length >= MAX_FRAMES}>+ Blank</button>
+            <button class="tool" onclick={() => addFrame(true)} disabled={frames.length >= MAX_FRAMES}>+ Copy</button>
+            <button class="tool" onclick={() => moveFrame(-1)} disabled={current === 0} title="Move earlier">◀ Move</button>
+            <button class="tool" onclick={() => moveFrame(1)} disabled={current === frames.length - 1} title="Move later">Move ▶</button>
+            <button class="tool" onclick={deleteFrame} disabled={frames.length < 2}>Delete frame</button>
+          </div>
+        {/if}
+      </div>
+      <div class="strip">
+        {#each frames as frame, i}
+          <button class="thumb" class:active={i === current} onclick={() => (current = i)} title={`Frame ${i + 1}`}>
+            <div class="mini"><DotScreen frames={[frame]} playing={false} /></div>
+            <span>{i + 1}</span>
+          </button>
+        {/each}
       </div>
     </div>
-    <div class="strip">
-      {#each frames as frame, i}
-        <button class="thumb" class:active={i === current} onclick={() => (current = i)} title={`Frame ${i + 1}`}>
-          <div class="mini"><DotScreen frames={[frame]} playing={false} /></div>
-          <span>{i + 1}</span>
-        </button>
-      {/each}
-    </div>
-  </div>
+  {/if}
 </section>
 
 <style>
   header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
     gap: 12px;
     margin-bottom: 16px;
   }
   .actions {
     display: flex;
     gap: 8px;
+    flex-shrink: 0;
+  }
+  .title {
+    flex: 1;
+    min-width: 0;
+    max-width: 360px;
+  }
+  .title h2,
+  .title .note {
+    margin: 0;
+  }
+  .readonly .cell {
+    cursor: default;
+  }
+  .readonly .cell:hover {
+    outline: none;
   }
   .primary {
     background: var(--accent);

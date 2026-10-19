@@ -43,10 +43,14 @@ export interface Settings {
 
 export type Frame = boolean[][]; // frame[y][x], 9x9
 
+// Stored with each screen: an animation keeps its frame strip and speed even at one frame.
+export type Kind = "image" | "animation";
+
 export interface Animation {
   slug: string;
   name: string;
   about: string;
+  kind: Kind;
   delay: number; // ~20 ms units; the keyboard plays every frame at this one speed
   frames: Frame[];
 }
@@ -80,8 +84,8 @@ export const api = {
   getLighting: (zone: Zone) => invoke<Lighting>("get_lighting", { zone }),
   setLighting: (zone: Zone, lighting: Lighting) => invoke<void>("set_lighting", { zone, lighting }),
   library: () => invoke<LibraryItem[]>("library"),
-  saveScreen: (slug: string | null, name: string, delay: number, frames: Frame[]) =>
-    invoke<LibraryItem>("save_screen", { slug, name, delay, frames }),
+  saveScreen: (slug: string | null, name: string, kind: Kind, delay: number, frames: Frame[]) =>
+    invoke<LibraryItem>("save_screen", { slug, name, kind, delay, frames }),
   deleteScreen: (slug: string) => invoke<void>("delete_screen", { slug }),
   screensFolder: () => invoke<string>("screens_folder"),
   play: (frames: Frame[], delay: number) => invoke<void>("play", { frames, delay }),
