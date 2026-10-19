@@ -229,7 +229,7 @@ One packet per frame: an 8-byte header, then the frame's bitmap in bytes 8..63. 
 | 8..25 | Bitmap, 18 bytes | see below | see below |
 | 26..63 | Padding | 0 | 0 |
 
-For an animation, send frames 0, 1, …, N − 1 in order, one packet each; the app waits 1 ms between them. The app allows up to 50 frames for this screen size. Verified: a 4-frame animation played in a loop.
+For an animation, send frames 0, 1, …, N − 1 in order, one packet each; the app waits 1 ms between them. The app allows up to 50 frames for this screen size. Verified: a 4-frame animation played in a loop. The keyboard plays every frame at one speed: a test with delay 10 on frame 0 and 100 on frame 1 showed both frames for the same, slow time (about 2 s each), so per-frame delays are not honored: the keyboard used the last frame's delay, or the largest (the test cannot tell which). Send the same delay in every frame.
 
 ### Bitmap packing
 
