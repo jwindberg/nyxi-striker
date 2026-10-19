@@ -55,11 +55,6 @@ export interface Animation {
   frames: Frame[];
 }
 
-// A library entry: included with the app (read-only) or the user's own (editable, saved on this computer).
-export interface LibraryItem extends Animation {
-  user: boolean;
-}
-
 export const MAX_FRAMES = 50;
 
 export const COLOR_CUSTOM = 7;
@@ -83,10 +78,11 @@ export const api = {
   modes: (zone: Zone) => invoke<ModeInfo[]>("modes", { zone }),
   getLighting: (zone: Zone) => invoke<Lighting>("get_lighting", { zone }),
   setLighting: (zone: Zone, lighting: Lighting) => invoke<void>("set_lighting", { zone, lighting }),
-  library: () => invoke<LibraryItem[]>("library"),
+  library: () => invoke<Animation[]>("library"),
   saveScreen: (slug: string | null, name: string, kind: Kind, delay: number, frames: Frame[]) =>
-    invoke<LibraryItem>("save_screen", { slug, name, kind, delay, frames }),
+    invoke<Animation>("save_screen", { slug, name, kind, delay, frames }),
   deleteScreen: (slug: string) => invoke<void>("delete_screen", { slug }),
+  restoreIncluded: () => invoke<void>("restore_included"),
   screensFolder: () => invoke<string>("screens_folder"),
   play: (frames: Frame[], delay: number) => invoke<void>("play", { frames, delay }),
   getSettings: () => invoke<Settings>("get_settings"),

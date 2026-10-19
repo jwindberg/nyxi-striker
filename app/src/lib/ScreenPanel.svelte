@@ -1,15 +1,15 @@
 <script lang="ts">
-  // Images and animations. Choosing one shows it on the keyboard (in its custom slot, which
-  // the screen switches to immediately) and opens it in the editor. Your own screens come
-  // first in each list; the ones included with the app are read-only and can be copied.
+  // Images and animations, all files in the screens folder; the ones included with the app
+  // are copied there as a starter set. Choosing one shows it on the keyboard (in its custom
+  // slot, which the screen switches to immediately) and opens it in the editor.
   import { onMount } from "svelte";
   import DotScreen from "./DotScreen.svelte";
   import ScreenEditor, { type Draft } from "./ScreenEditor.svelte";
-  import { api, blankFrame, type Frame, type Kind, type LibraryItem } from "./api";
+  import { api, blankFrame, type Frame, type Animation, type Kind } from "./api";
 
   let { onshow }: { onshow: (frames: Frame[], delay: number) => void } = $props();
 
-  let library = $state<LibraryItem[]>([]);
+  let library = $state<Animation[]>([]);
   let editing = $state<Draft | null>(null);
   // Bumped for every editor opened, so Copy starts a fresh one.
   let editorKey = $state(0);
@@ -19,7 +19,6 @@
   let folder = $state("");
   let error = $state("");
 
-  const key = (a: LibraryItem) => (a.user ? "mine:" : "included:") + a.slug;
   let images = $derived(library.filter((a) => a.kind === "image"));
   let animations = $derived(library.filter((a) => a.kind === "animation"));
 
@@ -64,22 +63,37 @@
     editorKey += 1;
   }
 
-  function choose(a: LibraryItem) {
+  function choose(a: Animation) {
     restore = { frames: a.frames, delay: a.delay };
     send(a.frames, a.delay);
     // Blank (first in the collection) has nothing to look at, so it just empties the slot.
-    if (!a.user && a.slug === "img-0-blank") return;
-    open({ slug: a.slug, user: a.user, kind: a.kind, name: a.name, delay: a.delay, frames: a.frames });
+    if (a.slug === "img-0-blank") return;
+    open({ slug: a.slug, kind: a.kind, name: a.name, delay: a.delay, frames: a.frames });
   }
 
   function create(kind: Kind) {
     restore = lastShown;
-    open({ slug: null, user: true, kind, name: "", delay: 10, frames: [blankFrame()] });
+    open({ slug: null, kind, name: "", delay: 10, frames: [blankFrame()] });
   }
 
   function cancel(changed: boolean) {
     editing = null;
     if (changed && restore) send(restore.frames, restore.delay);
+  }
+
+  let confirmRestore = $state(false);
+  async function restoreIncluded() {
+    if (!confirmRestore) {
+      confirmRestore = true;
+      return;
+    }
+    confirmRestore = false;
+    try {
+      await api.restoreIncluded();
+      await reload();
+    } catch (e) {
+      error = String(e);
+    }
   }
 
   async function closeAndReload() {
@@ -103,13 +117,12 @@
   <section class="panel">
     {#if error}<p class="error">{error}</p>{/if}
 
-    {#snippet grid(items: LibraryItem[], kind: Kind)}
+    {#snippet grid(items: Animation[], kind: Kind)}
       <div class="grid">
-        {#each items as a (key(a))}
+        {#each items as a (a.slug)}
           <button class="card" onclick={() => choose(a)} title={a.about || a.name}>
             <div class="screen"><DotScreen frames={a.frames} delay={a.delay} /></div>
             <span class="name">{a.name}</span>
-            {#if a.user}<span class="mine">yours</span>{/if}
           </button>
         {/each}
         <button class="card new" onclick={() => create(kind)}>
@@ -124,15 +137,44 @@
     <h3>Animations</h3>
     {@render grid(animations, "animation")}
 
-    {#if folder}
-      <p class="note folder">Your own images and animations are saved on this computer in <code>{folder}</code>. Copy the files there to use them on another computer.</p>
-    {/if}
+    <div class="footer">
+      {#if folder}
+        <p class="note">Your images and animations are saved on this computer in <code>{folder}</code>. Copy the files there to use them on another computer.</p>
+      {/if}
+      <button class="tool" class:danger={confirmRestore} onclick={restoreIncluded} onblur={() => (confirmRestore = false)}
+        title="Bring back the images and animations that came with the app, as they came">
+        {confirmRestore ? "Replace your changes to them?" : "Restore included screens"}
+      </button>
+    </div>
   </section>
 {/if}
 
 <style>
-  .folder {
+  .footer {
     margin-top: 18px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer .note {
+    margin: 0;
+  }
+  .tool {
+    flex-shrink: 0;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 5px 10px;
+    font: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .danger {
+    background: #e5484d;
+    border-color: #a8262b;
+    color: white;
   }
   code {
     font-size: 0.8rem;
@@ -159,7 +201,6 @@
     gap: 12px;
   }
   .card {
-    position: relative;
     background: var(--panel-2);
     border: 2px solid transparent;
     border-radius: 12px;
@@ -198,16 +239,5 @@
   .name {
     font-size: 0.82rem;
     text-align: center;
-  }
-  .mine {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    background: var(--accent);
-    color: #1b1b1b;
-    font-size: 0.62rem;
-    font-weight: 600;
-    padding: 1px 5px;
-    border-radius: 5px;
   }
 </style>

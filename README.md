@@ -23,9 +23,9 @@ npm run tauri build    # build an installer for this platform
 
 Needs Rust and Node.js. On Linux also WebKitGTK (`sudo apt install libwebkit2gtk-4.1-dev build-essential`) and the udev rule below; on Windows the Visual Studio C++ build tools.
 
-### Your own screen images and animations
+### Screen images and animations
 
-Images and animations you make in the app's editor are saved on that computer only, one text file each, in the same format as `animations/*.txt`:
+Every image and animation the Screen tab lists is a text file in a folder on that computer, in the same format as `animations/*.txt`. The ones included with the app (`animations/`) are a starter set: the app copies them into the folder the first time, and after that they can be edited or deleted like the ones you make.
 
 | Platform | Folder |
 | --- | --- |
@@ -33,7 +33,7 @@ Images and animations you make in the app's editor are saved on that computer on
 | macOS | `~/Library/Application Support/com.jwindberg.nyxi/screens/` |
 | Windows | `%APPDATA%\com.jwindberg.nyxi\screens\` |
 
-The app also shows the exact folder at the bottom of its Screen tab. To use them on another computer, copy the `.txt` files into that computer's folder (for example `scp ~/.local/share/com.jwindberg.nyxi/screens/*.txt othermachine:...`) and reopen the Screen tab. A file can also be added to `animations/` to include it with the app for everyone. ("Built-in" is kept for what the keyboard itself has: the jumping bird, Pac-Man and cat.) Each file is plain text: `; name:`, `; type: image` or `; type: animation`, and `; delay:` lines, then 9×9 frames of `#` and `.`; without a type line, one frame means an image.
+The app also shows the exact folder at the bottom of its Screen tab. To use them on another computer, copy the `.txt` files into that computer's folder (for example `scp ~/.local/share/com.jwindberg.nyxi/screens/*.txt othermachine:...`) and reopen the Screen tab. A file added to `animations/` is included with the app for everyone; a newer app copies only screens it hasn't copied before (recorded in the folder's `.included` file), so one you deleted stays deleted. "Restore included screens" at the bottom of the Screen tab puts them all back as they came, replacing your changes to them. ("Built-in" is kept for what the keyboard itself has: the jumping bird, Pac-Man and cat.) Each file is plain text: `; name:`, `; type: image` or `; type: animation`, and `; delay:` lines, then 9×9 frames of `#` and `.`; without a type line, one frame means an image.
 
 ## Running the official NYXI app on macOS or Linux
 

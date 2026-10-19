@@ -1,11 +1,11 @@
 //! Tauri backend: thin commands over nyxi-core. The keyboard is opened on first use and
 //! dropped after any error, so unplugging and replugging recovers on the next call.
 //!
-//! The user's own screen images and animations are text files (the animations/ format) in
-//! <app data>/screens; see the README for where that is on each platform.
+//! Screen images and animations are text files (the animations/ format) in <app data>/screens;
+//! see the README for where that is on each platform. The ones included with the app are a
+//! starter set copied there, after which they are the user's to edit or delete like any other.
 
 use nyxi_core::{lighting, screen, Animation, Frame, Info, Kind, Keyboard, Lighting, ModeInfo, Settings, SleepTimers, Zone};
-use serde::Serialize;
 use std::{fs, path::PathBuf, sync::Mutex};
 use tauri::{AppHandle, Manager, State};
 
@@ -44,14 +44,6 @@ async fn set_lighting(device: State<'_, Device>, zone: Zone, lighting: Lighting)
     with_keyboard(&device, |kb| kb.set_lighting(zone, &lighting))
 }
 
-#[derive(Serialize)]
-struct LibraryItem {
-    #[serde(flatten)]
-    animation: Animation,
-    /// True for the user's own (editable) screens, false for the ones included with the app.
-    user: bool,
-}
-
 fn screens_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("screens");
     fs::create_dir_all(&dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
@@ -64,6 +56,30 @@ fn screen_file(app: &AppHandle, slug: &str) -> Result<PathBuf, String> {
         return Err(format!("invalid screen id {slug:?}"));
     }
     Ok(screens_dir(app)?.join(format!("{slug}.txt")))
+}
+
+/// Lists the included screens already copied into the folder, one id per line, so one the
+/// user deleted isn't copied back; only screens new in a later version of the app are added.
+const INCLUDED_RECORD: &str = ".included";
+
+fn add_included(app: &AppHandle) -> Result<(), String> {
+    let dir = screens_dir(app)?;
+    let record = dir.join(INCLUDED_RECORD);
+    let done = fs::read_to_string(&record).unwrap_or_default();
+    let done: Vec<&str> = done.lines().collect();
+    let mut added = String::new();
+    for a in screen::library().into_iter().filter(|a| !done.contains(&a.slug.as_str())) {
+        let path = dir.join(format!("{}.txt", a.slug));
+        if !path.exists() {
+            fs::write(&path, screen::to_text(&a)).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+        }
+        added += &format!("{}\n", a.slug);
+    }
+    if !added.is_empty() {
+        let all = done.iter().map(|s| format!("{s}\n")).collect::<String>() + &added;
+        fs::write(&record, all).map_err(|e| format!("cannot write {}: {e}", record.display()))?;
+    }
+    Ok(())
 }
 
 fn user_screens(app: &AppHandle) -> Result<Vec<Animation>, String> {
@@ -81,15 +97,25 @@ fn user_screens(app: &AppHandle) -> Result<Vec<Animation>, String> {
 }
 
 #[tauri::command]
-fn library(app: AppHandle) -> Result<Vec<LibraryItem>, String> {
-    let user = user_screens(&app)?.into_iter().map(|animation| LibraryItem { animation, user: true });
-    let included = screen::library().into_iter().map(|animation| LibraryItem { animation, user: false });
-    Ok(user.chain(included).collect())
+fn library(app: AppHandle) -> Result<Vec<Animation>, String> {
+    add_included(&app)?;
+    user_screens(&app)
 }
 
-/// Save a user screen. A new one (`slug` = None) gets a fresh id from its name.
+/// Put every included screen back as it came with the app, replacing any changed copy.
 #[tauri::command]
-fn save_screen(app: AppHandle, slug: Option<String>, name: String, kind: Kind, delay: u8, frames: Vec<Frame>) -> Result<LibraryItem, String> {
+fn restore_included(app: AppHandle) -> Result<(), String> {
+    let dir = screens_dir(&app)?;
+    for a in screen::library() {
+        let path = dir.join(format!("{}.txt", a.slug));
+        fs::write(&path, screen::to_text(&a)).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+    }
+    Ok(())
+}
+
+/// Save a screen. A new one (`slug` = None) gets a fresh id from its name.
+#[tauri::command]
+fn save_screen(app: AppHandle, slug: Option<String>, name: String, kind: Kind, delay: u8, frames: Vec<Frame>) -> Result<Animation, String> {
     if frames.is_empty() || frames.len() > screen::MAX_FRAMES || (kind == Kind::Image && frames.len() > 1) {
         return Err(format!("an animation needs 1 to {} frames", screen::MAX_FRAMES));
     }
@@ -105,7 +131,7 @@ fn save_screen(app: AppHandle, slug: Option<String>, name: String, kind: Kind, d
     let animation = Animation { slug: slug.clone(), name, about: String::new(), kind, delay, frames };
     let path = screen_file(&app, &slug)?;
     fs::write(&path, screen::to_text(&animation)).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
-    Ok(LibraryItem { animation, user: true })
+    Ok(animation)
 }
 
 #[tauri::command]
@@ -159,6 +185,7 @@ pub fn run() {
             get_lighting,
             set_lighting,
             library,
+            restore_included,
             save_screen,
             delete_screen,
             screens_folder,

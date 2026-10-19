@@ -1,12 +1,11 @@
 <script lang="ts">
   // The editor for one image or animation. Choosing a screen opens it here and shows it on
-  // the keyboard; every change is shown on the keyboard as you make it. Screens included with
-  // the app are read-only: Copy makes your own version. An image is one frame; an animation keeps its
+  // the keyboard; every change is shown on the keyboard as you make it. An image is one frame; an animation keeps its
   // frame strip and speed even at one frame. The keyboard plays every frame at one speed.
   import DotScreen from "./DotScreen.svelte";
-  import { api, blankFrame, copyFrame, DELAY_UNIT_MS, MAX_FRAMES, type Frame, type Kind, type LibraryItem } from "./api";
+  import { api, blankFrame, copyFrame, DELAY_UNIT_MS, MAX_FRAMES, type Frame, type Animation, type Kind } from "./api";
 
-  export type Draft = { slug: string | null; user: boolean; kind: Kind; name: string; delay: number; frames: Frame[] };
+  export type Draft = { slug: string | null; kind: Kind; name: string; delay: number; frames: Frame[] };
 
   let {
     draft,
@@ -17,7 +16,7 @@
     onsend,
   }: {
     draft: Draft;
-    onsaved: (item: LibraryItem) => void;
+    onsaved: (item: Animation) => void;
     ondeleted: () => void;
     oncancel: (changed: boolean) => void;
     onduplicate: (copy: Draft) => void;
@@ -41,8 +40,6 @@
 
   // Fixed for the editor's lifetime (a new editor opens for each screen).
   // svelte-ignore state_referenced_locally
-  const readOnly = !draft.user;
-  // svelte-ignore state_referenced_locally
   const animation = draft.kind === "animation";
   // svelte-ignore state_referenced_locally
   const saved = draft.slug !== null;
@@ -55,7 +52,6 @@
   let paintValue: boolean | null = null;
 
   function paintStart(x: number, y: number, e: PointerEvent) {
-    if (readOnly) return;
     e.preventDefault();
     paintValue = !frames[current][y][x];
     paint(x, y);
@@ -142,7 +138,7 @@
   function duplicate() {
     clearTimeout(timer);
     const o = outgoing();
-    onduplicate({ slug: null, user: true, kind: draft.kind, name: `Copy of ${name.trim() || "Untitled"}`, delay: delay, frames: o.frames });
+    onduplicate({ slug: null, kind: draft.kind, name: `Copy of ${name.trim() || "Untitled"}`, delay: delay, frames: o.frames });
   }
 
   async function remove() {
@@ -165,34 +161,23 @@
 <section class="panel editor">
   <header>
     <div class="title">
-      {#if readOnly}
-        <h2>{name}</h2>
-        <p class="note">Included with the app. This {animation ? "animation" : "image"} can't be changed; <b>Copy</b> it to make your own version.</p>
-      {:else}
         <span class="label">{saved ? "" : "New "}{animation ? "animation" : "image"}</span>
         <input class="text" type="text" bind:value={name} oninput={() => { dirty = true; confirmCancel = false; }} placeholder="Untitled" />
-      {/if}
     </div>
     <div class="actions">
-      {#if !readOnly && saved}
-        <button class="key" class:danger={confirmDelete} onclick={remove}>{confirmDelete ? "Really delete?" : "Delete"}</button>
-      {/if}
       {#if saved}
+        <button class="key" class:danger={confirmDelete} onclick={remove}>{confirmDelete ? "Really delete?" : "Delete"}</button>
         <button class="key" onclick={duplicate}>Copy</button>
       {/if}
-      {#if readOnly}
-        <button class="key primary" onclick={cancel}>Done</button>
-      {:else}
-        <button class="key" class:danger={confirmCancel} onclick={cancel}>{confirmCancel ? "Discard changes?" : "Cancel"}</button>
-        <button class="key primary" onclick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
-      {/if}
+      <button class="key" class:danger={confirmCancel} onclick={cancel}>{confirmCancel ? "Discard changes?" : "Cancel"}</button>
+      <button class="key primary" onclick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
     </div>
   </header>
   {#if error}<p class="error">{error}</p>{/if}
 
   <div class="body">
     <div>
-      <div class="canvas" class:readonly={readOnly}>
+      <div class="canvas">
         {#each frames[current] as row, y}
           {#each row as on, x}
             <button
@@ -200,26 +185,23 @@
               class:on
               class:ghost={!on && onion && previous?.[y][x]}
               aria-label={`dot ${x + 1},${y + 1}`}
-              disabled={readOnly}
               onpointerdown={(e) => paintStart(x, y, e)}
               onpointerenter={() => paint(x, y)}
             ></button>
           {/each}
         {/each}
       </div>
-      {#if !readOnly}
-        <div class="tools">
-          <button class="tool" onclick={clear} title="Clear this frame">Clear</button>
-          <button class="tool" onclick={invert} title="Swap lit and dark dots">Invert</button>
-          <button class="tool" onclick={flipH} title="Mirror left to right">Flip ↔</button>
-          <button class="tool" onclick={flipV} title="Mirror top to bottom">Flip ↕</button>
-          <span class="sep"></span>
-          <button class="tool" onclick={() => shift(-1, 0)} title="Shift left (wraps)">←</button>
-          <button class="tool" onclick={() => shift(1, 0)} title="Shift right (wraps)">→</button>
-          <button class="tool" onclick={() => shift(0, -1)} title="Shift up (wraps)">↑</button>
-          <button class="tool" onclick={() => shift(0, 1)} title="Shift down (wraps)">↓</button>
-        </div>
-      {/if}
+      <div class="tools">
+        <button class="tool" onclick={clear} title="Clear this frame">Clear</button>
+        <button class="tool" onclick={invert} title="Swap lit and dark dots">Invert</button>
+        <button class="tool" onclick={flipH} title="Mirror left to right">Flip ↔</button>
+        <button class="tool" onclick={flipV} title="Mirror top to bottom">Flip ↕</button>
+        <span class="sep"></span>
+        <button class="tool" onclick={() => shift(-1, 0)} title="Shift left (wraps)">←</button>
+        <button class="tool" onclick={() => shift(1, 0)} title="Shift right (wraps)">→</button>
+        <button class="tool" onclick={() => shift(0, -1)} title="Shift up (wraps)">↑</button>
+        <button class="tool" onclick={() => shift(0, 1)} title="Shift down (wraps)">↓</button>
+      </div>
     </div>
 
     {#if animation}
@@ -229,17 +211,15 @@
           <div class="preview"><DotScreen {frames} {delay} /></div>
         </div>
 
-        <label class="field" class:inactive={readOnly}>
+        <label class="field">
           <span class="label">Speed <b>{fps}</b> frames/s</span>
           <!-- Slider runs fast (left = slow) by inverting the delay. -->
-          <input type="range" min="-60" max="-2" value={-delay} disabled={readOnly} oninput={(e) => { delay = -Number(e.currentTarget.value); changed(); }} />
+          <input type="range" min="-60" max="-2" value={-delay} oninput={(e) => { delay = -Number(e.currentTarget.value); changed(); }} />
         </label>
 
-        {#if !readOnly}
-          <label class="check">
-            <input type="checkbox" bind:checked={onion} /> Show previous frame faintly
-          </label>
-        {/if}
+        <label class="check">
+          <input type="checkbox" bind:checked={onion} /> Show previous frame faintly
+        </label>
       </div>
     {/if}
   </div>
@@ -248,15 +228,13 @@
     <div class="frames">
       <div class="frames-head">
         <span class="label">Frames <b>{frames.length}</b> / {MAX_FRAMES}</span>
-        {#if !readOnly}
-          <div class="frame-tools">
-            <button class="tool" onclick={() => addFrame(false)} disabled={frames.length >= MAX_FRAMES}>+ Blank</button>
-            <button class="tool" onclick={() => addFrame(true)} disabled={frames.length >= MAX_FRAMES}>+ Copy</button>
-            <button class="tool" onclick={() => moveFrame(-1)} disabled={current === 0} title="Move earlier">◀ Move</button>
-            <button class="tool" onclick={() => moveFrame(1)} disabled={current === frames.length - 1} title="Move later">Move ▶</button>
-            <button class="tool" onclick={deleteFrame} disabled={frames.length < 2}>Delete frame</button>
-          </div>
-        {/if}
+        <div class="frame-tools">
+          <button class="tool" onclick={() => addFrame(false)} disabled={frames.length >= MAX_FRAMES}>+ Blank</button>
+          <button class="tool" onclick={() => addFrame(true)} disabled={frames.length >= MAX_FRAMES}>+ Copy</button>
+          <button class="tool" onclick={() => moveFrame(-1)} disabled={current === 0} title="Move earlier">◀ Move</button>
+          <button class="tool" onclick={() => moveFrame(1)} disabled={current === frames.length - 1} title="Move later">Move ▶</button>
+          <button class="tool" onclick={deleteFrame} disabled={frames.length < 2}>Delete frame</button>
+        </div>
       </div>
       <div class="strip">
         {#each frames as frame, i}
@@ -287,16 +265,6 @@
     flex: 1;
     min-width: 0;
     max-width: 360px;
-  }
-  .title h2,
-  .title .note {
-    margin: 0;
-  }
-  .readonly .cell {
-    cursor: default;
-  }
-  .readonly .cell:hover {
-    outline: none;
   }
   .primary {
     background: var(--accent);
@@ -425,7 +393,7 @@
     display: flex;
     gap: 8px;
     overflow-x: auto;
-    padding-bottom: 6px;
+    padding-bottom: 8px;
   }
   .thumb {
     flex: 0 0 auto;
