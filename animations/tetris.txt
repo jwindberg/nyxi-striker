@@ -1,5 +1,5 @@
 ; name: Tetris
-; delay: 5
+; delay: 9
 ; about: Blocks falling and clearing lines
 
 ........#

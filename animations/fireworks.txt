@@ -1,5 +1,5 @@
 ; name: Fireworks
-; delay: 5
+; delay: 9
 ; about: Three rockets bursting
 
 .........

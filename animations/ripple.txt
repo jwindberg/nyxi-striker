@@ -1,5 +1,5 @@
 ; name: Ripple
-; delay: 6
+; delay: 10
 ; about: Rings spreading from a drop in a pond
 
 .........

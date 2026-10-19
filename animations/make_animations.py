@@ -132,7 +132,7 @@ def bouncing_ball():
             for dy in (0, 1):
                 put(g, x + dx, y + dy)
         frames.append(g)
-    save("ball", "Bouncing ball", 4, "A ball bouncing across the screen", frames)
+    save("ball", "Bouncing ball", 7, "A ball bouncing across the screen", frames)
 
 
 def rain():
@@ -163,7 +163,7 @@ def matrix():
                 if k == 0 or (k + t) % 3:     # flicker the trail a little
                     put(g, x, head - k)
         frames.append(g)
-    save("matrix", "Matrix", 5, "Falling code, Matrix style", frames)
+    save("matrix", "Matrix", 9, "Falling code, Matrix style", frames)
 
 
 def glider():
@@ -204,7 +204,7 @@ def pacman():
                 put(g, d, 4)
         sprite(g, PAC_OPEN if t % 2 == 0 else PAC_SHUT, x, 2)
         frames.append(g)
-    save("pacman", "Pac-Man", 6, "Pac-Man eating a row of dots", frames)
+    save("pacman", "Pac-Man", 10, "Pac-Man eating a row of dots", frames)
 
 
 def scroll(slug, name, about, text, delay=4):
@@ -230,7 +230,7 @@ def ripple():
                 if abs(math.hypot(x - 4, y - 4) - r) < 0.5:
                     g[y][x] = 1
         frames.append(g)
-    save("ripple", "Ripple", 6, "Rings spreading from a drop in a pond", frames)
+    save("ripple", "Ripple", 10, "Rings spreading from a drop in a pond", frames)
 
 
 def warp():
@@ -262,7 +262,7 @@ def fireworks():
                     put(g, cx + dx * r, top + dy * r + (1 if r > 3 else 0))
             frames.append(g)
         frames.append(blank())
-    save("fireworks", "Fireworks", 5, "Three rockets bursting", frames)
+    save("fireworks", "Fireworks", 9, "Three rockets bursting", frames)
 
 
 def equalizer():
@@ -283,17 +283,17 @@ def eye():
     outline = ["..#####..", ".#.....#.", "#.......#", "#.......#", "#.......#", "#.......#", "#.......#", ".#.....#.", "..#####.."]
     lid = [".........", ".........", ".........", ".........", "#########", ".........", ".........", ".........", "........."]
 
+    iris = [".#.", "###", "###", ".#."]
+
     def look(px, py):
         g = blank()
         sprite(g, outline, 0, 0)
-        for dx in (0, 1):
-            for dy in (0, 1):
-                put(g, px + dx, py + dy)
+        sprite(g, iris, px - 1, py - 2)
         return g
 
     shut = blank()
     sprite(shut, lid, 0, 0)
-    seq = [look(4, 4)] * 4 + [look(2, 4)] * 4 + [look(4, 4)] * 2 + [look(6, 4)] * 4 + [look(4, 4)] * 3 + [shut] + [look(4, 4)] * 2 + [look(4, 2)] * 3
+    seq = [look(4, 4)] * 4 + [look(2, 4)] * 4 + [look(4, 4)] * 2 + [look(6, 4)] * 4 + [look(4, 4)] * 3 + [shut] + [look(4, 4)] * 2 + [look(4, 3)] * 3
     save("eye", "Watching eye", 8, "An eye that looks around and blinks", [[r[:] for r in g] for g in seq])
 
 
@@ -309,7 +309,10 @@ def wave():
 
 
 def snake():
-    path = [(x, 0) for x in range(9)] + [(8, y) for y in range(1, 9)] + [(x, 8) for x in range(7, -1, -1)] + [(0, y) for y in range(7, 0, -1)]
+    # A closed loop that winds back and forth through the square, then returns up the left edge.
+    path = ([(x, 1) for x in range(1, 8)] + [(7, 2)] + [(x, 3) for x in range(7, 0, -1)] + [(1, 4)]
+            + [(x, 5) for x in range(1, 8)] + [(7, 6)] + [(x, 7) for x in range(7, -1, -1)]
+            + [(0, y) for y in range(6, 0, -1)])
     frames = []
     for t in range(len(path)):
         g = blank()
@@ -317,7 +320,7 @@ def snake():
             x, y = path[(t - k) % len(path)]
             put(g, x, y)
         frames.append(g)
-    save("snake", "Snake", 3, "A snake running laps around the edge", frames)
+    save("snake", "Snake", 7, "A snake winding through the square", frames)
 
 
 def dino():
@@ -380,7 +383,7 @@ def tetris():
     for x in (0, 2, 4, 6):
         drop(O, x)
     clear()
-    save("tetris", "Tetris", 5, "Blocks falling and clearing lines", frames)
+    save("tetris", "Tetris", 9, "Blocks falling and clearing lines", frames)
 
 
 def pulse():
@@ -420,7 +423,5 @@ def wink():
 
 if __name__ == "__main__":
     for make in (heartbeat, spinner, bouncing_ball, rain, matrix, glider, invader, pacman, ripple, warp,
-                 fireworks, equalizer, eye, wave, snake, dino, tetris, pulse, loading, wink):
+                 fireworks, equalizer, eye, wave, snake, tetris, pulse, loading, wink):
         make()
-    scroll("1up", "1UP", "Retro 1UP scrolling by, like the keyboard's logo", "1UP")
-    scroll("nyxi", "NYXI", "The NYXI name scrolling by", "NYXI")
