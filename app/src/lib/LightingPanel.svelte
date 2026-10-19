@@ -82,32 +82,29 @@
         </select>
       </label>
 
-      {#if mode && mode.options.length}
-        <label class="field">
-          <span class="label">Variant</span>
-          <select value={light.option} onchange={(e) => { light!.option = Number(e.currentTarget.value); apply(); }}>
-            {#each mode.options as opt, i}
-              <option value={i}>{opt}</option>
-            {/each}
-          </select>
-        </label>
-      {/if}
+      <!-- Always present (disabled when unused) so the layout never shifts. -->
+      <label class="field" class:inactive={!mode?.options.length}>
+        <span class="label">Variant</span>
+        <select value={light.option} disabled={!mode?.options.length} onchange={(e) => { light!.option = Number(e.currentTarget.value); apply(); }}>
+          {#each mode?.options.length ? mode.options : ["None"] as opt, i}
+            <option value={i}>{opt}</option>
+          {/each}
+        </select>
+      </label>
     </div>
 
-    {#if !isOff}
-      <div class="sliders">
-        <label class="field">
-          <span class="label">Brightness <b>{light.brightness}</b>/4</span>
-          <input type="range" min="1" max="4" bind:value={light.brightness} oninput={() => apply(150)} />
-        </label>
-        {#if mode?.speed}
-          <label class="field">
-            <span class="label">Speed <b>{light.speed}</b>/4</span>
-            <input type="range" min="0" max="4" bind:value={light.speed} oninput={() => apply(150)} />
-          </label>
-        {/if}
-      </div>
+    <div class="sliders">
+      <label class="field" class:inactive={isOff}>
+        <span class="label">Brightness <b>{light.brightness}</b>/4</span>
+        <input type="range" min="1" max="4" disabled={isOff} bind:value={light.brightness} oninput={() => apply(150)} />
+      </label>
+      <label class="field" class:inactive={isOff || !mode?.speed}>
+        <span class="label">Speed <b>{light.speed}</b>/4</span>
+        <input type="range" min="0" max="4" disabled={isOff || !mode?.speed} bind:value={light.speed} oninput={() => apply(150)} />
+      </label>
+    </div>
 
+    <div class:inactive={isOff}>
       <div class="field">
         <span class="label">Color</span>
         <div class="swatches">
@@ -127,7 +124,7 @@
           </label>
         </div>
       </div>
-    {/if}
+    </div>
   {:else if !error}
     <p class="muted">Reading the keyboard…</p>
   {/if}
@@ -173,10 +170,15 @@
   .label b {
     color: var(--text);
   }
-  .selects {
+  .selects,
+  .sliders {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 0 24px;
+  }
+  .inactive {
+    opacity: 0.35;
+    pointer-events: none;
   }
   select {
     width: 100%;
@@ -189,11 +191,6 @@
     font: inherit;
     font-size: 0.92rem;
     cursor: pointer;
-  }
-  .sliders {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0 24px;
   }
   input[type="range"] {
     width: 100%;
