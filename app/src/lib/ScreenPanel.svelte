@@ -1,6 +1,7 @@
 <script lang="ts">
-  // The animation library: every animation previews live; choosing one uploads it to the
-  // keyboard's custom slot, which the screen switches to immediately.
+  // The image and animation library: everything previews live; choosing one uploads it to
+  // the keyboard's custom slot, which the screen switches to immediately. An image is
+  // simply a one-frame animation.
   import { onMount } from "svelte";
   import DotScreen from "./DotScreen.svelte";
   import { api, blankFrame, DELAY_UNIT_MS, type Animation, type Frame } from "./api";
@@ -14,6 +15,9 @@
   let error = $state("");
 
   let fps = $derived((1000 / (Math.max(1, delay) * DELAY_UNIT_MS)).toFixed(1));
+  let images = $derived(library.filter((a) => a.frames.length === 1));
+  let animations = $derived(library.filter((a) => a.frames.length > 1));
+  let animated = $derived((selected?.frames.length ?? 0) > 1);
 
   onMount(async () => {
     library = await api.animations();
@@ -53,8 +57,8 @@
 <section class="panel">
   <header>
     <div>
-      <h2>Screen animations</h2>
-      <p class="note">Choosing one shows it on the keyboard right away, in its custom slot.</p>
+      <h2>Screen</h2>
+      <p class="note">Choosing an image or animation shows it on the keyboard right away, in its custom slot.</p>
     </div>
     <button class="key" onclick={clear} disabled={busy}>Clear screen</button>
   </header>
@@ -62,25 +66,33 @@
 
   {#if error}<p class="error">{error}</p>{/if}
 
-  {#if selected}
-    <div class="now">
-      <span class="label">Playing <b>{selected.name}</b></span>
-      <label class="speed">
-        <span class="label">Speed <b>{fps}</b> frames/s</span>
-        <!-- Slider runs fast (left = slow) by inverting the delay. -->
-        <input type="range" min="-60" max="-2" value={-delay} oninput={(e) => { delay = -Number(e.currentTarget.value); changeSpeed(); }} />
-      </label>
-    </div>
-  {/if}
-
-  <div class="grid">
-    {#each library as a (a.slug)}
-      <button class="card" class:active={selected?.slug === a.slug} onclick={() => choose(a)} title={a.about} disabled={busy}>
-        <div class="screen"><DotScreen frames={a.frames} delay={a.delay} /></div>
-        <span class="name">{a.name}</span>
-      </button>
-    {/each}
+  <!-- Always present so the grid below never shifts; speed only applies to animations. -->
+  <div class="now">
+    <span class="label">
+      {#if selected}{animated ? "Playing" : "Showing"} <b>{selected.name}</b>{:else}Nothing chosen yet{/if}
+    </span>
+    <label class="speed" class:inactive={!animated}>
+      <span class="label">Speed <b>{animated ? fps : "–"}</b> frames/s</span>
+      <!-- Slider runs fast (left = slow) by inverting the delay. -->
+      <input type="range" min="-60" max="-2" value={-delay} disabled={!animated} oninput={(e) => { delay = -Number(e.currentTarget.value); changeSpeed(); }} />
+    </label>
   </div>
+
+  {#snippet grid(items: Animation[])}
+    <div class="grid">
+      {#each items as a (a.slug)}
+        <button class="card" class:active={selected?.slug === a.slug} onclick={() => choose(a)} title={a.about} disabled={busy}>
+          <div class="screen"><DotScreen frames={a.frames} delay={a.delay} /></div>
+          <span class="name">{a.name}</span>
+        </button>
+      {/each}
+    </div>
+  {/snippet}
+
+  <h3>Images</h3>
+  {@render grid(images)}
+  <h3>Animations</h3>
+  {@render grid(animations)}
 </section>
 
 <style>
@@ -100,6 +112,14 @@
     border-radius: 10px;
     padding: 12px 14px 4px;
     margin-bottom: 16px;
+  }
+  h3 {
+    margin: 18px 0 10px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 600;
   }
   .grid {
     display: grid;
