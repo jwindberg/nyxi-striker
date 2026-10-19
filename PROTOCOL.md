@@ -192,7 +192,7 @@ The app sends speed 0 (raw byte 4) for modes without a speed setting, as in the 
 
 ## Second lighting zone (SLEDPARAM)
 
-The keyboard keeps a second, independent lighting setting under commands 0x08 (set) and 0x88 (get). It uses the backlight's byte layout with two differences: the speed byte is not inverted, and only six modes exist. Which physical LEDs it drives on the CA01 is unknown; the app does not show a second zone for this model. The keyboard-option bits include a matching "sLedOff" flag.
+The keyboard keeps a second, independent lighting setting under commands 0x08 (set) and 0x88 (get). It uses the backlight's byte layout with two differences: the speed byte is not inverted, and only six modes exist. On the CA01 it appears to drive nothing: writing it from the new app (several modes and colors, with the "sLedOff" flag clear) produced no visible change, and NYXI's app does not show a second zone for this model. The keyboard-option bits include a matching "sLedOff" flag.
 
 | Byte | Meaning | Values |
 | --- | --- | --- |

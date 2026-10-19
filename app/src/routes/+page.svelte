@@ -55,10 +55,8 @@
   </nav>
 
   {#if tab === "lighting"}
-    <div class="stack">
-      <LightingPanel zone="main" title="Backlight" />
-      <LightingPanel zone="side" title="Second zone" note="The keyboard's second lighting setting. Which lights it drives on the CA01 is still unknown." />
-    </div>
+    <!-- The firmware also has a second lighting zone (zone="side"), but nothing on the CA01 lights up for it. -->
+    <LightingPanel zone="main" title="Backlight" />
   {:else if tab === "screen"}
     <ScreenPanel onshow={(frames, delay) => (shown = { frames, delay })} />
   {:else}
