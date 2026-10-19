@@ -1,0 +1,5 @@
+[workspace]
+resolver = "2"
+members = ["crates/nyxi-core", "app/src-tauri"]
+# NYXI's-app driver replacement builds on its own (scripts use nyxi-driver/target).
+exclude = ["nyxi-driver"]

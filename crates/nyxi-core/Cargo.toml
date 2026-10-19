@@ -1,0 +1,15 @@
+[package]
+name = "nyxi-core"
+version = "0.1.0"
+edition = "2021"
+description = "NYXI CA01 Striker keyboard protocol (see PROTOCOL.md)"
+
+[[bin]]
+name = "nyxi"
+path = "src/bin/nyxi.rs"
+
+[dependencies]
+# linux-native-basic-udev: pure-Rust hidraw backend, so Linux builds need no libudev-dev.
+hidapi = { version = "2.6", default-features = false, features = ["linux-native-basic-udev"] }
+serde = { version = "1", features = ["derive"] }
+thiserror = "1"
