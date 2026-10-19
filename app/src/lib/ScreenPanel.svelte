@@ -11,7 +11,7 @@
 
   let library = $state<LibraryItem[]>([]);
   let editing = $state<Draft | null>(null);
-  // Bumped for every editor opened, so Duplicate starts a fresh one.
+  // Bumped for every editor opened, so Copy starts a fresh one.
   let editorKey = $state(0);
   // What the keyboard showed before the editor opened; Cancel puts it back.
   let restore: { frames: Frame[]; delay: number } | null = null;
