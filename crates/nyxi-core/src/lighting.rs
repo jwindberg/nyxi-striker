@@ -62,7 +62,7 @@ const fn m(id: u8, name: &'static str, speed: bool, options: &'static [&'static 
     ModeInfo { id, name, speed, options }
 }
 
-/// Backlight modes offered for the CA01. Left out: 13 (per-key picture, needs per-key colors
+/// Backlight modes offered for the Striker. Left out: 13 (per-key picture, needs per-key colors
 /// set first) and 20-22 (music/screen following, which need the host to stream data).
 pub const MAIN_MODES: &[ModeInfo] = &[
     m(0, "Off", false, &[]),

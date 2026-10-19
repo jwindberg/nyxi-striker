@@ -4,7 +4,7 @@ use std::time::Duration;
 
 fn main() {
     let api = HidApi::new().expect("Failed to init hidapi");
-    println!("Testing GET_LEDPARAM (0x87) on NYXI CA01 (0x3151:0x4015)...");
+    println!("Testing GET_LEDPARAM (0x87) on NYXI Striker (0x3151:0x4015)...");
 
     for dev_info in api.device_list() {
         if dev_info.vendor_id() == 0x3151 && dev_info.product_id() == 0x4015 {

@@ -30,13 +30,13 @@
 <main>
   <header>
     <div class="keyboard">
-      <img src="/img/ca01.png" alt="NYXI CA01 Striker keyboard" />
+      <img src="/img/striker.png" alt="NYXI Striker keyboard" />
       {#if shown}
         <div class="overlay"><DotScreen frames={shown.frames} delay={shown.delay} /></div>
       {/if}
     </div>
     <div class="status">
-      <h1>CA01 Striker</h1>
+      <h1>Striker</h1>
       {#if info}
         <p><span class="dot ok"></span>Connected · {info.wireless ? "2.4 GHz" : "wired"} · firmware {version(info.firmware)}</p>
       {:else if connectError}
@@ -62,7 +62,7 @@
   </nav>
 
   {#if tab === "lighting"}
-    <!-- The firmware also has a second lighting zone (zone="side"), but nothing on the CA01 lights up for it. -->
+    <!-- The firmware also has a second lighting zone (zone="side"), but nothing on the Striker lights up for it. -->
     <LightingPanel zone="main" title="Backlight" />
   {:else if tab === "screen"}
     <ScreenPanel onshow={(frames, delay) => (shown = { frames, delay })} />
@@ -93,7 +93,7 @@
     width: 100%;
     height: auto;
   }
-  /* The screen in ca01.png (871x288): a 9x9 grid of dots, 5 px apart, from (732.5, 20). */
+  /* The screen in striker.png (871x288): a 9x9 grid of dots, 5 px apart, from (732.5, 20). */
   .overlay {
     position: absolute;
     left: calc(728 / 871 * 100%);

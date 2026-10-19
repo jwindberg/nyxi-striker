@@ -1,7 +1,7 @@
 {
   "name": "nyxi-app",
   "version": "0.1.0",
-  "description": "Control app for the NYXI CA01 Striker keyboard",
+  "description": "Control app for the NYXI Striker keyboard",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

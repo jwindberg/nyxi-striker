@@ -115,7 +115,7 @@
     <h2>About</h2>
     {#if info}
       <dl>
-        <dt>Keyboard</dt><dd>NYXI CA01 Striker (device {info.device_id})</dd>
+        <dt>Keyboard</dt><dd>NYXI Striker, model CA01 (device {info.device_id})</dd>
         <dt>Connection</dt><dd>{info.wireless ? "2.4 GHz receiver" : "USB cable"}</dd>
         <dt>Firmware</dt><dd>{version(info.firmware)}</dd>
       </dl>

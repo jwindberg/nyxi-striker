@@ -3,7 +3,7 @@ use std::time::Duration;
 
 fn main() {
     println!("========================================================");
-    println!("          NYXI CA01 KEYBOARD: READ API DIAGNOSTIC       ");
+    println!("          NYXI Striker KEYBOARD: READ API DIAGNOSTIC       ");
     println!("========================================================");
 
     let api = match HidApi::new() {

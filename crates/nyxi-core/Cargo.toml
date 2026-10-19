@@ -2,7 +2,7 @@
 name = "nyxi-core"
 version = "0.1.0"
 edition = "2021"
-description = "NYXI CA01 Striker keyboard protocol (see PROTOCOL.md)"
+description = "NYXI Striker keyboard protocol (see PROTOCOL.md)"
 
 [[bin]]
 name = "nyxi"

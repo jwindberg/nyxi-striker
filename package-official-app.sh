@@ -117,7 +117,7 @@ cat > "$HOME/.local/share/applications/nyxi-driver.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
 Name=NYXI Driver
-Comment=Configure the NYXI CA01 Striker keyboard
+Comment=Configure the NYXI Striker keyboard
 Exec="$DEST/nyxi-app"
 Icon=$DEST/icon.png
 Categories=Utility;Settings;

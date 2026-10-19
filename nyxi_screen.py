@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upload images / animations to the NYXI CA01 9x9 dot-matrix screen.
+"""Upload images / animations to the NYXI Striker 9x9 dot-matrix screen.
 
 Protocol (from the official app: Vx.setTFTLCDData + bitmap packer tJ):
   packet = [0x24, frameCount-1 (0 if static), chunk, frameIndex, delay, layer, 0, csum] + 56 data bytes

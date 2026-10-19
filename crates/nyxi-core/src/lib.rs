@@ -1,4 +1,4 @@
-//! NYXI CA01 "Striker" keyboard control. The protocol is documented in PROTOCOL.md.
+//! NYXI Striker keyboard control. The protocol is documented in PROTOCOL.md.
 //!
 //! Every command is a 64-byte HID feature report, report ID 0, on the keyboard's vendor
 //! interface (USB interface 2, usage page 0xFFFF, usage 2). A GET is a SET of the GET
@@ -46,7 +46,7 @@ pub fn checksum(buf: &mut [u8; 64], pos: usize) {
 pub struct Info {
     /// Firmware version, e.g. 0x0105 = 1.05.
     pub firmware: u16,
-    /// NYXI device id, 1473 = CA01 wired.
+    /// NYXI device id, 1473 = Striker wired.
     pub device_id: u16,
     pub wireless: bool,
 }
@@ -57,7 +57,7 @@ pub struct Keyboard {
 }
 
 impl Keyboard {
-    /// Open the first connected CA01 (wired or 2.4 GHz dongle).
+    /// Open the first connected Striker (wired or 2.4 GHz dongle).
     pub fn open() -> Result<Self> {
         let api = HidApi::new()?;
         let info = api

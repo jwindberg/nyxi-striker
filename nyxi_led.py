@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read / set the backlight effect on a NYXI CA01 (Striker) keyboard over Linux hidraw.
+"""Read / set the backlight effect on a NYXI Striker keyboard over Linux hidraw.
 
 Protocol (from the official app's dist/index.js, class hw / CK, and iot_driver):
   * Commands are 64-byte HID *feature* reports on the vendor interface

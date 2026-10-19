@@ -1,10 +1,10 @@
-# NYXI CA01 Keyboard Control Protocol
+# NYXI Striker Keyboard Control Protocol
 
 Last updated 2026-10-17. Living copy (with comments): https://claude.ai/code/artifact/6ff822f3-1b26-429c-9f84-1afd0db36134
 
 ## Overview
 
-Everything on the NYXI CA01 (Striker) is configured with 64-byte HID feature reports sent to USB interface 2, each carrying a one-byte command and a simple checksum. Reading and setting the backlight and uploading images to the 9x9 dot-matrix screen were verified on real hardware on 2026-10-17 (Linux, firmware 1.05). The protocol comes from NYXI's official Windows app, an Electron front end plus a Rust helper (`iot_driver.exe`). Its JavaScript (`extracted_asar/dist/index.js`) builds every packet, so it is the reference for anything not yet verified.
+Everything on the NYXI Striker (model CA01) is configured with 64-byte HID feature reports sent to USB interface 2, each carrying a one-byte command and a simple checksum. Reading and setting the backlight and uploading images to the 9x9 dot-matrix screen were verified on real hardware on 2026-10-17 (Linux, firmware 1.05). The protocol comes from NYXI's official Windows app, an Electron front end plus a Rust helper (`iot_driver.exe`). Its JavaScript (`extracted_asar/dist/index.js`) builds every packet, so it is the reference for anything not yet verified.
 
 What can be controlled, and how sure we are:
 
@@ -93,7 +93,7 @@ Example: GET_LEDPARAM is `87 00 00 00 00 00 00 78` followed by 56 zero bytes (0x
 
 ## Command reference
 
-A GET command is its SET command plus 0x80, and every GET uses checksum BIT7. The values below are what the CA01's device class (`CK`, via its parents `Qz`, `hw` and `Kx`) actually uses. Other NYXI models reuse the same names with different numbers, so don't copy constants from other classes in the app.
+A GET command is its SET command plus 0x80, and every GET uses checksum BIT7. The values below are what the Striker's device class (`CK`, via its parents `Qz`, `hw` and `Kx`) actually uses. Other NYXI models reuse the same names with different numbers, so don't copy constants from other classes in the app.
 
 | Set | Get | Name in app | Payload summary | Status |
 | --- | --- | --- | --- | --- |
@@ -117,7 +117,7 @@ A GET command is its SET command plus 0x80, and every GET uses checksum BIT7. Th
 | 0x2B | 0xAB | OLEDEFFECT | For other models' screens | Ignored (SET has no effect; GET returns a byte unrelated to the animation) |
 | — | 0x80 | REV (firmware) | Reply [1..2] little-endian, 0x0105 = 1.05 | Verified |
 | — | 0x83 | BATTERY | Reply [1] (reads 0 when wired) | Read only, meaning unverified |
-| — | 0x8F | INFOR (device id) | Reply [1..2] little-endian, 0x05C1 = 1473 = CA01 wired | Verified |
+| — | 0x8F | INFOR (device id) | Reply [1..2] little-endian, 0x05C1 = 1473 = Striker wired | Verified |
 
 Commands that can damage or reset the keyboard are listed under Hazards. Never send them while exploring.
 
@@ -146,7 +146,7 @@ Color mode (low nibble of byte 4):
 
 The app only writes 7 or 8; presets appear when they are chosen with Fn keys. Writing a preset value is untested. Quirk: the app sends pure white FFFFFF as FAFFFA and maps it back on read.
 
-Modes (byte 1) and their options (high nibble of byte 4). "Offered" means the app shows the mode for the CA01.
+Modes (byte 1) and their options (high nibble of byte 4). "Offered" means the app shows the mode for the Striker.
 
 | Mode | App name | Option nibble | Offered |
 | --- | --- | --- | --- |
@@ -173,7 +173,7 @@ Modes (byte 1) and their options (high nibble of byte 4). "Offered" means the ap
 | 20 | LightMusicFollow3 (music reactive) | 0 upright, 1 separate, 2 intersect | Yes |
 | 21 | LightScreenColor (follows screen) | —; brightness fixed at 4 | Yes |
 | 22 | LightMusicFollow2 | 0 upright, 1 separate, 2 intersect | Yes |
-| 23, 24, 66 | LightTrain, LightFireWorks, LightUserColor | FireWorks: 0 right, 1 left | Not for CA01 |
+| 23, 24, 66 | LightTrain, LightFireWorks, LightUserColor | FireWorks: 0 right, 1 left | Not for Striker |
 
 Modes 20 to 22 only animate while the host streams data (commands 0x0D and 0x0E); the app does that, a bare SET does not. For those modes the app writes color mode 0 for rainbow and 4 otherwise, not 7 or 8.
 
@@ -192,7 +192,7 @@ The app sends speed 0 (raw byte 4) for modes without a speed setting, as in the 
 
 ## Second lighting zone (SLEDPARAM)
 
-The keyboard keeps a second, independent lighting setting under commands 0x08 (set) and 0x88 (get). It uses the backlight's byte layout with two differences: the speed byte is not inverted, and only six modes exist. On the CA01 it appears to drive nothing: writing it from the new app (several modes and colors, with the "sLedOff" flag clear) produced no visible change, and NYXI's app does not show a second zone for this model. The keyboard-option bits include a matching "sLedOff" flag.
+The keyboard keeps a second, independent lighting setting under commands 0x08 (set) and 0x88 (get). It uses the backlight's byte layout with two differences: the speed byte is not inverted, and only six modes exist. On the Striker it appears to drive nothing: writing it from the new app (several modes and colors, with the "sLedOff" flag clear) produced no visible change, and NYXI's app does not show a second zone for this model. The keyboard-option bits include a matching "sLedOff" flag.
 
 | Byte | Meaning | Values |
 | --- | --- | --- |
@@ -270,16 +270,16 @@ Column 0 is `1C` (rows 2, 3, 4 lit), and the second band's `01` at column 4 is t
 - **Choose a built-in animation.** Fn + Left Ctrl cycles: jumping bird → custom slot → Pac-Man → cat → jumping bird (Fn + Right Ctrl does nothing). No host command for it is known: the OLEDEFFECT commands (0x2B/0xAB) are ignored. Earlier checks for a USB event or a changed setting were made while pressing Right Ctrl, so they did not actually cycle and should be repeated with Left Ctrl.
 - **Remove the custom slot.** It stays in the rotation. The nearest thing to deleting it is uploading an all-blank frame.
 - **Turn the screen off.** Fn + Page Down turns it on and off on the keyboard; no host command is known.
-- **Use the OLED commands.** 0x2B/0xAB are for other models' screens. On the CA01, SET 0x2B with mode 0 (off) or 1 (on) changed nothing, and GET 0xAB returned `ab 06 …` or `ab 00 …` regardless of the animation shown.
+- **Use the OLED commands.** 0x2B/0xAB are for other models' screens. On the Striker, SET 0x2B with mode 0 (off) or 1 (on) changed nothing, and GET 0xAB returned `ab 06 …` or `ab 00 …` regardless of the animation shown.
 
 
 ## Other settings
 
-These layouts are taken from the official app's code for the CA01. The GET replies listed as verified in the command table were read on hardware. SETs verified on hardware (written, read back, restored): polling rate, debounce, sleep timers, and the Windows-key lock bit (also confirmed by the key itself). The other SETs in this section are untested. Unless stated otherwise, every packet is 64 bytes with a BIT7 checksum at byte 7, and the payload starts at byte 1 or byte 8 as shown.
+These layouts are taken from the official app's code for the Striker. The GET replies listed as verified in the command table were read on hardware. SETs verified on hardware (written, read back, restored): polling rate, debounce, sleep timers, and the Windows-key lock bit (also confirmed by the key itself). The other SETs in this section are untested. Unless stated otherwise, every packet is 64 bytes with a BIT7 checksum at byte 7, and the payload starts at byte 1 or byte 8 as shown.
 
 ### Profile
 
-The CA01 has 3 profiles (0, 1, 2). Set: `05 [profile]`; get: `85` → reply byte 1 = profile. Many other commands take the profile in byte 1.
+The Striker has 3 profiles (0, 1, 2). Set: `05 [profile]`; get: `85` → reply byte 1 = profile. Many other commands take the profile in byte 1.
 
 ### Polling rate
 
@@ -322,7 +322,7 @@ The SET fields start at byte 8 because byte 7 holds the checksum. The test keybo
 
 Set: `13 [profile] [slot] 00 00 00 00 [csum] [c0] [c1] [c2] [c3]`: the slot in byte 2, and the 4-byte action code in bytes 8..11.
 
-**Slot** = the key's position in the CA01's default key matrix: 128 slots of 4 bytes, column by column, 6 rows per column. Each slot's 4 bytes are the key's default action code (normally `00 00 [HID usage] 00`). Used slots on the CA01:
+**Slot** = the key's position in the Striker's default key matrix: 128 slots of 4 bytes, column by column, 6 rows per column. Each slot's 4 bytes are the key's default action code (normally `00 00 [HID usage] 00`). Used slots on the Striker:
 
 ```
 0 Esc, 1 `, 2 Tab, 3 CapsLock, 4 LShift, 5 LCtrl, 6 F1, 7 1, 8 Q, 9 A, 10 ISO-\, 12 F2, 13 2, 14 W, 15 S, 16 Z,
@@ -351,7 +351,7 @@ Example (unverified): CapsLock (slot 3) acts as Left Ctrl in profile 0: `13 00 0
 
 ### Fn layer
 
-Same as key remapping, but command 0x15 with the Fn layer index in byte 1: `15 [fnIndex] [slot] … [csum] [c0..c3]`. The CA01 has one Fn layer. To restore a key's default Fn action, the app copies 4 bytes from the default Fn table (`PK` for this model).
+Same as key remapping, but command 0x15 with the Fn layer index in byte 1: `15 [fnIndex] [slot] … [csum] [c0..c3]`. The Striker has one Fn layer. To restore a key's default Fn action, the app copies 4 bytes from the default Fn table (`PK` for this model).
 
 ### Macros
 
@@ -403,7 +403,7 @@ The official app is a UI that builds packets and hands them to a local helper ov
 
 ```
 +-------------------+     +-------------------+     +-------------------+     +---------------------+
-| NYXI app          | --> | gRPC-web          | --> | iot_driver        | --> | CA01 keyboard       |
+| NYXI app          | --> | gRPC-web          | --> | iot_driver        | --> | Striker keyboard       |
 | Electron UI       |     | 127.0.0.1:3814    |     | adds the checksum |     | interface 2: config |
 | builds packets    |     | sendMsg, readMsg  |     | HID feature I/O   |     | interface 1: events |
 +-------------------+     +-------------------+     +-------------------+     +---------------------+
@@ -417,7 +417,7 @@ The app passes each packet without its checksum, plus the checksum type. The dri
 
 | Method | Request → response | Purpose |
 | --- | --- | --- |
-| watchDevList | Empty → stream DeviceList | Devices present; the app matches `id` (1473 = CA01 wired, −2147485121 = dongle) and uses `path` as the device address |
+| watchDevList | Empty → stream DeviceList | Devices present; the app matches `id` (1473 = Striker wired, −2147485121 = dongle) and uses `path` as the device address |
 | sendMsg | SendMsg{devicepath, msg, checksumtype, dangledevtype} → ResSend{err} | Apply the checksum, send one feature report; err "" = success |
 | readMsg | ReadMsg{devicepath} → ResRead{err, msg} | Read one feature report (64 bytes, no report ID) |
 | sendRawFeature, readRawFeature | Same messages | Raw variants, used for the 2.4 GHz dongle |
@@ -456,7 +456,7 @@ The app's "firmware update" downloads files from NYXI's servers and drives these
 - [x] Does uploading to the screen switch it to the custom slot? Yes, immediately.
 - [x] Do multi-frame screen animations play, and what unit is the frame delay? Yes; about 20 ms per unit.
 - [ ] Is there any host command that chooses a built-in screen animation or turns the screen off?
-- [ ] What does the second lighting zone (0x08) light up on the CA01?
+- [ ] What does the second lighting zone (0x08) light up on the Striker?
 - [ ] Do the GET replies work on macOS with the correct checksum?
 - [ ] Is the macro body encoding right? Write a short macro, then read it back with 0x96.
 - [ ] Which bit does the keyboard actually use for Mac mode: bit 1 or bit 2?
@@ -467,13 +467,13 @@ The app's JavaScript is one minified file, `extracted_asar/dist/index.js` (5.5 M
 
 | Search for | What it is |
 | --- | --- |
-| `yc500_nyxift98_soc` | CA01 device entries (VID/PID, ids, screen size) and its class `CK` |
-| `CK=function` | CA01 class; its parent chain is CK → Qz → hw → Jx → Zx → Hx → Kx → Ix → Vx |
+| `yc500_nyxift98_soc` | Striker device entries (VID/PID, ids, screen size) and its class `CK` |
+| `CK=function` | Striker class; its parent chain is CK → Qz → hw → Jx → Zx → Hx → Kx → Ix → Vx |
 | `FEA_CMD_` | Command constants; later classes override earlier ones, so resolve them along the chain |
 | `setLightSetting`, `getLightSetting` | Backlight packets (take the copy inside class hw) |
 | `setTFTLCDData` | Screen upload (in class Vx) |
 | `tJ=function` | 9x9 bitmap packer |
-| `zK=[` | CA01 default key matrix (slot table) |
+| `zK=[` | Striker default key matrix (slot table) |
 | `setKeyConfigSimple`, `configToChangeArr` | Single-key remap and action codes (class Qz) |
 | `setMacro`, `_setMacro` | Macro body and chunking |
 | `watchVender` | Vendor event decoding |

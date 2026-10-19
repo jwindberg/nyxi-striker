@@ -1,6 +1,6 @@
-# NYXI CA01 Striker: open-source control
+# NYXI Striker: open-source control
 
-Tools for controlling the NYXI CA01 "Striker" keyboard (backlight, 9x9 screen, settings) without NYXI's Windows-only app.
+Tools for controlling the NYXI Striker keyboard, model CA01 (backlight, 9x9 screen, settings), without NYXI's Windows-only app.
 
 - `app/`: **the new app** (Tauri + Svelte) for macOS, Windows and Linux: lighting, the 9x9 screen (images and animations included with the app, plus your own, with an editor) and settings.
 - `crates/nyxi-core/`: the keyboard protocol in Rust, used by the app, with a small `nyxi` command-line tool.

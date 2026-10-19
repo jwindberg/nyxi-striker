@@ -15,7 +15,7 @@ fn countdown(sec: u32, msg: &str) {
 
 fn main() {
     println!("========================================================");
-    println!("  NYXI CA01 KEYBOARD: OPCODE 4 vs 7 'HELLO WORLD' TEST   ");
+    println!("  NYXI Striker KEYBOARD: OPCODE 4 vs 7 'HELLO WORLD' TEST   ");
     println!("========================================================");
 
     let api = match HidApi::new() {

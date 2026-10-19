@@ -4,7 +4,7 @@ use std::time::Duration;
 
 fn main() {
     println!("=======================================================");
-    println!("       NYXI CA01: SINGLE VERIFIED SOLID RED LED TEST   ");
+    println!("       NYXI Striker: SINGLE VERIFIED SOLID RED LED TEST   ");
     println!("=======================================================");
 
     let api = match HidApi::new() {
