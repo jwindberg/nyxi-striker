@@ -108,10 +108,10 @@ A GET command is its SET command plus 0x80, and every GET uses checksum BIT7. Th
 | 0x0E | — | WINDOS | Screen-color lighting frames | Unverified |
 | 0x11 | 0x91 | DEBOUNCE | Set [2] ms; get reply [2] | Verified (set 3, read back, restored to 1) |
 | 0x12 | 0x92 | SLEEPTIME | 16-bit seconds, see Other settings | Verified (changed, read back, restored) |
-| 0x13 | 0x93 | KEYMATRIX_SIMPLE | One key remap, see Other settings | Unverified |
+| 0x13 | 0x93 | KEYMATRIX_SIMPLE | One key remap, see Other settings | Verified (set, read back with 0x89, restored) |
 | 0x14 | 0x94 | USERPIC_SIMPLE | One key's custom color: [1] slot, [2] key index, [8..10] RGB | Unverified |
 | 0x15 | 0x95 | FN_SIMPLE | One Fn-layer key remap | Unverified |
-| 0x16 | 0x96 | MACRO_SIMPLE | Macro body in 56-byte chunks | Unverified |
+| 0x16 | 0x96 | MACRO_SIMPLE | Macro body in 56-byte chunks; read back with 0x8B | Write verified |
 | 0x17 | 0x97 | CMD_AUTOOSEN | Not decoded | Get verified (reads 0) |
 | 0x24 | — | OLEDGIFDATA (9x9 screen) | See Dot-matrix screen | Verified |
 | 0x2B | 0xAB | OLEDEFFECT | For other models' screens | Ignored (SET has no effect; GET returns a byte unrelated to the animation) |
@@ -347,11 +347,27 @@ Source: array `zK` in `dist/index.js`. Fn's slot code is `00 0A 01 00`, and the 
 | Mouse or special function | From the app's tables `qz` (mouse) and `Lx` (functions) |
 | Run a macro | `09 [mode] [macro index] 00`; mode 0 = repeat N times, 1 = toggle on/off, 2 = repeat while held |
 
-Example (unverified): CapsLock (slot 3) acts as Left Ctrl in profile 0: `13 00 03 00 00 00 00 E9 00 00 E0 00`.
+Example: CapsLock (slot 3) acts as Left Ctrl in profile 0: `13 00 03 00 00 00 00 E9 00 00 E0 00`.
 
 ### Fn layer
 
 Same as key remapping, but command 0x15 with the Fn layer index in byte 1: `15 [fnIndex] [slot] … [csum] [c0..c3]`. The Striker has one Fn layer. To restore a key's default Fn action, the app copies 4 bytes from the default Fn table (`PK` for this model).
+
+### Reading the key map, Fn layer and macros
+
+Verified read-only on 2026-10-20. Each read is a GET with BIT7 checksum, `[cmd] [index] [chunk] 00 00 00 00 [csum]`, repeated for each chunk. Unlike the other GETs, the reply carries no command byte: all 64 bytes are data, and the app joins the chunks.
+
+| Read | Command | Index | Chunks | Result on this keyboard |
+| --- | --- | --- | --- | --- |
+| Key map | 0x89 | profile | 0..7 (128 slots × 4 bytes) | Identical to the app's default table `zK` |
+| Fn layer | 0x90 | Fn layer 0 | 0..7 | Matches `PK` except slot 71 (Right Ctrl): keyboard `00 00 00 00`, `PK` `13 03 01 00` |
+| Macro | 0x8B | macro number | 0..3 (256 bytes) | Macros 0..2 all zero (none set) |
+
+The Right Ctrl difference fits what the keyboard does: Fn + Right Ctrl does nothing, while Fn + Left Ctrl (slot 5, `13 00 00 00` in both) cycles the screen. So the app's default Fn table is not exactly this firmware's, and "restore default" on Right Ctrl would write an action the keyboard didn't ship with.
+
+Macro write verified on 2026-10-20: a one-chunk macro (`16 00 00 38 01 00 00 [csum]` + body `01 00 04 8A 04 00`, i.e. repeat once, A down with a 10 ms delay, A up) read back byte for byte with 0x8B, and writing a zero chunk cleared it. The change takes 0.1 to 0.3 s to appear: a read 50 ms after the write still returns the old contents, so wait at least 300 ms before reading back. Note from the app code: it only sends chunks that contain a nonzero byte, so deleting a macro in the app sends nothing and probably leaves it on the keyboard; to clear one, write a zero chunk 0 with the last-chunk flag set.
+
+Running a macro from a key, verified the same day: macro 0 = `01 00 0B 8A 0B 0A 0C 8A 0C 00` (h down/up, i down/up, 10 ms apart), key remap `13 00 5B 00 00 00 00 [csum] 09 00 00 00` (keypad /, slot 91 → run macro 0, mode 0). Pressing keypad / typed "hi". The macro's keys arrive as NKRO bitmap reports (report ID 1, a different hidraw node from the 8-byte boot reports that ordinary typing produced). Writing the key's default code `00 00 54 00` back restored it. This also verifies single-key remapping (0x13).
 
 ### Macros
 
@@ -458,7 +474,8 @@ The app's "firmware update" downloads files from NYXI's servers and drives these
 - [ ] Is there any host command that chooses a built-in screen animation or turns the screen off?
 - [ ] What does the second lighting zone (0x08) light up on the Striker?
 - [ ] Do the GET replies work on macOS with the correct checksum?
-- [ ] Is the macro body encoding right? Write a short macro, then read it back with 0x96.
+- [x] Can the key map, Fn layer and macros be read? Yes (0x89, 0x90, 0x8B); see "Reading the key map, Fn layer and macros".
+- [x] Does a macro run from a key? Yes: keypad / set to `09 00 00 00` typed the macro ("hi"), then was restored.
 - [ ] Which bit does the keyboard actually use for Mac mode: bit 1 or bit 2?
 
 ### Where to find things
