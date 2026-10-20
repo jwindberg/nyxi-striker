@@ -28,9 +28,11 @@ npm install --prefix "$ROOT/electron-local" --no-audit --no-fund "electron@$ELEC
 if [ "$(uname)" = Darwin ]; then
     RESOURCES="$DIST/Electron.app/Contents/Resources"
     ELECTRON="$DIST/Electron.app/Contents/MacOS/Electron"
+    TO_ROOT=../../../../../../..
 else
     RESOURCES="$DIST/resources"
     ELECTRON="$DIST/electron"
+    TO_ROOT=../../../../..
 fi
 rm -rf "$RESOURCES/app.asar" "$RESOURCES/app.asar.unpacked" "$RESOURCES/app"
 
@@ -60,8 +62,9 @@ else
         git clone "$APP_REPO" "$ROOT/extracted_asar"
     fi
     # Electron runs resources/app/ the same way as resources/app.asar. The app loads its pages from
-    # resources/app.asar.unpacked/, so that points at the same files.
-    ln -s "$ROOT/extracted_asar" "$RESOURCES/app"
+    # resources/app.asar.unpacked/, so that points at the same files. Relative links keep working
+    # when the project folder is moved or renamed.
+    ln -s "$TO_ROOT/extracted_asar" "$RESOURCES/app"
     ln -s app "$RESOURCES/app.asar.unpacked"
 fi
 
