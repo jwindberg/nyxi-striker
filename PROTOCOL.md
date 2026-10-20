@@ -110,7 +110,7 @@ A GET command is its SET command plus 0x80, and every GET uses checksum BIT7. Th
 | 0x12 | 0x92 | SLEEPTIME | 16-bit seconds, see Other settings | Verified (changed, read back, restored) |
 | 0x13 | 0x93 | KEYMATRIX_SIMPLE | One key remap, see Other settings | Verified (set, read back with 0x89, restored) |
 | 0x14 | 0x94 | USERPIC_SIMPLE | One key's custom color: [1] slot, [2] key index, [8..10] RGB | Unverified |
-| 0x15 | 0x95 | FN_SIMPLE | One Fn-layer key remap | Unverified |
+| 0x15 | 0x95 | FN_SIMPLE | One Fn-layer key remap | Verified (set, read back with 0x90, restored) |
 | 0x16 | 0x96 | MACRO_SIMPLE | Macro body in 56-byte chunks; read back with 0x8B | Write verified |
 | 0x17 | 0x97 | CMD_AUTOOSEN | Not decoded | Get verified (reads 0) |
 | 0x24 | — | OLEDGIFDATA (9x9 screen) | See Dot-matrix screen | Verified |
@@ -365,6 +365,8 @@ Verified read-only on 2026-10-20. Each read is a GET with BIT7 checksum, `[cmd] 
 
 The Right Ctrl difference fits what the keyboard does: Fn + Right Ctrl does nothing, while Fn + Left Ctrl (slot 5, `13 00 00 00` in both) cycles the screen. So the app's default Fn table is not exactly this firmware's, and "restore default" on Right Ctrl would write an action the keyboard didn't ship with.
 
+Tested 2026-10-20: with Fn + Right Ctrl set to `13 03 01 00` (written with 0x15, which read back correctly, so Fn-layer writes work), pressing it had no visible effect on the screen or backlight. Each press did send vendor event `05 21 40 00` or `05 21 42 00`, alternating, so the firmware recognizes the action and flips some internal state, but nothing readable changed (KBOPTION, profile, polling rate, debounce, sleep, both lighting zones all unchanged). Probably a function for other models in the same firmware family. Restored to `00 00 00 00`.
+
 Macro write verified on 2026-10-20: a one-chunk macro (`16 00 00 38 01 00 00 [csum]` + body `01 00 04 8A 04 00`, i.e. repeat once, A down with a 10 ms delay, A up) read back byte for byte with 0x8B, and writing a zero chunk cleared it. The change takes 0.1 to 0.3 s to appear: a read 50 ms after the write still returns the old contents, so wait at least 300 ms before reading back. Note from the app code: it only sends chunks that contain a nonzero byte, so deleting a macro in the app sends nothing and probably leaves it on the keyboard; to clear one, write a zero chunk 0 with the last-chunk flag set.
 
 Running a macro from a key, verified the same day: macro 0 = `01 00 0B 8A 0B 0A 0C 8A 0C 00` (h down/up, i down/up, 10 ms apart), key remap `13 00 5B 00 00 00 00 [csum] 09 00 00 00` (keypad /, slot 91 → run macro 0, mode 0). Pressing keypad / typed "hi". The macro's keys arrive as NKRO bitmap reports (report ID 1, a different hidraw node from the 8-byte boot reports that ordinary typing produced). Writing the key's default code `00 00 54 00` back restored it. This also verifies single-key remapping (0x13).
@@ -410,6 +412,7 @@ How the app decodes `[a0, a1, a2]`:
 | `13 00 00` | Sleep mode toggled |
 | `2C 00 00` | Screen clear finished |
 | `80 00 [1..3]` | Shortcut to open app 1..3 (used by other models) |
+| `21 40 00` / `21 42 00` | Not in the app's decoder. Sent by Fn action `13 03 01 00` on the Striker, alternating on each press, with no visible effect |
 
 The app debounces these by 500 ms and then re-reads the affected setting with a GET. Status: an earlier session recorded backlight events (a0 = 04, a1 = mode) on this keyboard. In a later test, pressing Fn + Right Ctrl produced no event, but that key combination does not cycle the screen (Fn + Left Ctrl does), so whether cycling sends an event is still unknown.
 
