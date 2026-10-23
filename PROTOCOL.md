@@ -99,7 +99,7 @@ A GET command is its SET command plus 0x80, and every GET uses checksum BIT7. Th
 | --- | --- | --- | --- | --- |
 | 0x04 | 0x84 | REPORT (polling rate) | [1] profile, [2] 1=1000 Hz, 2=500, 4=250, 8=125 | Verified (set 500, read back, restored) |
 | 0x05 | 0x85 | PROFILE | [1] profile 0..2 | Get verified (reads 0) |
-| 0x06 | 0x86 | KBOPTION | Option bits, see Other settings | Get verified; set verified for the Windows-key lock bit |
+| 0x06 | 0x86 | KBOPTION | Option bits, see Other settings | Get verified; set verified for the Windows-key lock and Mac-mode bits |
 | 0x07 | 0x87 | LEDPARAM (backlight) | See Backlight; set uses BIT8 | Verified |
 | 0x08 | 0x88 | SLEDPARAM (second zone) | Same layout as LEDPARAM; set uses BIT8 | Get verified |
 | 0x0A | 0x8A | KEYENABLE | Not decoded | Unverified |
@@ -269,7 +269,7 @@ Column 0 is `1C` (rows 2, 3, 4 lit), and the second band's `01` at column 4 is t
 
 - **Choose a built-in animation.** Fn + Left Ctrl cycles: jumping bird → custom slot → Pac-Man → cat → jumping bird (Fn + Right Ctrl does nothing). No host command for it is known: the OLEDEFFECT commands (0x2B/0xAB) are ignored. Earlier checks for a USB event or a changed setting were made while pressing Right Ctrl, so they did not actually cycle and should be repeated with Left Ctrl.
 - **Remove the custom slot.** It stays in the rotation. The nearest thing to deleting it is uploading an all-blank frame.
-- **Turn the screen off.** Fn + Page Down turns it on and off on the keyboard; no host command is known.
+- **Turn the screen off.** Fn + Page Down turns it on and off on the keyboard; no host command is known. Both screen shortcuts are firmware functions in the Fn layer (read with 0x90): Fn + Page Down is action `0a 0c 00 00`, Fn + Left Ctrl is `13 00 00 00`. They run only from a key press. The base class's OLEDOPTION (0x22) is not an on/off switch either: the app uses it to send disk, memory, CPU and network figures to models with a color screen.
 - **Use the OLED commands.** 0x2B/0xAB are for other models' screens. On the Striker, SET 0x2B with mode 0 (off) or 1 (on) changed nothing, and GET 0xAB returned `ab 06 …` or `ab 00 …` regardless of the animation shown.
 
 
@@ -292,14 +292,14 @@ Set: `06 [profile] [flags] [fnMatrix] [powerSave]`; get: `86 [profile]` → the 
 | Flags bit | Meaning when 1 |
 | --- | --- |
 | 0 (0x01) | Windows key locked (verified: the key stops working) |
-| 1 (0x02) | Mac mode (as decoded on read) |
+| 1 (0x02) | Mac mode (verified: the keyboard's Fn layer, read with 0x90, switches Fn+F3 from Win+Tab to Ctrl+Up, Fn+F4 from Win+D to Cmd+M, Fn+F12 from Win+Space to Ctrl+Space, and clears Fn+Win; the normal key map is unchanged) |
 | 3 (0x08) | WASD and arrow keys swapped |
 | 4 (0x10) | Backlight off |
 | 5 (0x20) | Second zone off |
 | 6 (0x40) | "keyboardMode" (meaning unknown) |
 | 7 (0x80) | Keyboard locked |
 
-Byte 3 bit 0 = "Fn key matrix" (meaning unknown); byte 4 nonzero = power-save mode. Inconsistency in the app: it reads Mac mode from bit 1 but writes it at bit 2 (and converts "mac"/"win" with `Number()`, which gives 0). Read-modify-write the byte and test before relying on the Mac bit.
+Byte 3 bit 0 = "Fn key matrix" (meaning unknown); byte 4 nonzero = power-save mode. The app reads Mac mode from bit 1 but writes `Number("mac")` (NaN, so 0) into bit 2, so it can never turn Mac mode on, and any option write from it turns Mac mode off. Bit 2 is stored if written, but it is not a mode: with it set, the Fn layer reads back as all 0xFF. Read-modify-write the byte.
 
 ### Debounce
 
@@ -485,7 +485,7 @@ The app's "firmware update" downloads files from NYXI's servers and drives these
 - [ ] Do the GET replies work on macOS with the correct checksum?
 - [x] Can the key map, Fn layer and macros be read? Yes (0x89, 0x90, 0x8B); see "Reading the key map, Fn layer and macros".
 - [x] Does a macro run from a key? Yes: keypad / set to `09 00 00 00` typed the macro ("hi"), then was restored.
-- [ ] Which bit does the keyboard actually use for Mac mode: bit 1 or bit 2?
+- [x] Which bit does the keyboard use for Mac mode? Bit 1 (0x02); see Keyboard options.
 
 ### Where to find things
 

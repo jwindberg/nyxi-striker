@@ -16,6 +16,10 @@ const SET_SLEEPTIME: u8 = 0x12;
 const GET_SLEEPTIME: u8 = 0x92;
 
 const WIN_LOCK_BIT: u8 = 0x01;
+/// Mac mode: the keyboard swaps some Fn shortcuts for Mac ones (Fn+F3, F4, F12; Fn+Win does
+/// nothing). Verified by reading the Fn layer with the bit set. The official app reads this bit
+/// but never sets it.
+const MAC_MODE_BIT: u8 = 0x02;
 pub const MAX_DEBOUNCE_MS: u8 = 10;
 /// Polling rates in Hz and their wire codes.
 pub const POLLING_RATES: [(u16, u8); 4] = [(1000, 1), (500, 2), (250, 4), (125, 8)];
@@ -34,6 +38,7 @@ pub struct Settings {
     pub polling_hz: u16,
     pub debounce_ms: u8,
     pub win_lock: bool,
+    pub mac_mode: bool,
     pub sleep: SleepTimers,
 }
 
@@ -58,11 +63,13 @@ impl Keyboard {
         let code = self.query(GET_REPORT, &[profile])?[2];
         let polling_hz = POLLING_RATES.iter().find(|r| r.1 == code).map_or(0, |r| r.0);
         let s = self.query(GET_SLEEPTIME, &[])?;
+        let flags = self.query(GET_KBOPTION, &[profile])?[2];
         let le = |i: usize| u16::from_le_bytes([s[i], s[i + 1]]);
         Ok(Settings {
             polling_hz,
             debounce_ms: self.query(GET_DEBOUNCE, &[])?[2],
-            win_lock: self.query(GET_KBOPTION, &[profile])?[2] & WIN_LOCK_BIT != 0,
+            win_lock: flags & WIN_LOCK_BIT != 0,
+            mac_mode: flags & MAC_MODE_BIT != 0,
             sleep: SleepTimers { light_bt: le(1), light_24g: le(3), deep_bt: le(5), deep_24g: le(7) },
         })
     }
@@ -80,12 +87,20 @@ impl Keyboard {
         self.write(&[(0, SET_DEBOUNCE), (2, ms)])
     }
 
-    /// Lock or unlock the Windows key, keeping every other option bit as the keyboard has it.
-    pub fn set_win_lock(&self, locked: bool) -> Result<()> {
+    /// Set or clear one keyboard option bit, keeping every other one as the keyboard has it.
+    fn set_option(&self, bit: u8, on: bool) -> Result<()> {
         let profile = self.profile()?;
         let r = self.query(GET_KBOPTION, &[profile])?;
-        let flags = if locked { r[2] | WIN_LOCK_BIT } else { r[2] & !WIN_LOCK_BIT };
+        let flags = if on { r[2] | bit } else { r[2] & !bit };
         self.write(&[(0, SET_KBOPTION), (1, profile), (2, flags), (3, r[3]), (4, r[4])])
+    }
+
+    pub fn set_win_lock(&self, locked: bool) -> Result<()> {
+        self.set_option(WIN_LOCK_BIT, locked)
+    }
+
+    pub fn set_mac_mode(&self, mac: bool) -> Result<()> {
+        self.set_option(MAC_MODE_BIT, mac)
     }
 
     pub fn set_sleep_timers(&self, t: &SleepTimers) -> Result<()> {

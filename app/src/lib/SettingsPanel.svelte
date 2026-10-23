@@ -79,6 +79,15 @@
             {settings.win_lock ? "Locked" : "Unlocked"}
           </button>
         </div>
+
+        <label class="field">
+          <span class="label">Fn shortcuts for</span>
+          <select value={settings.mac_mode ? "mac" : "win"} onchange={(e) => { settings!.mac_mode = e.currentTarget.value === "mac"; run(api.setMacMode(settings!.mac_mode)); }}>
+            <option value="win">Windows</option>
+            <option value="mac">macOS</option>
+          </select>
+          <span class="hint">macOS changes Fn + F3, F4 and F12 to Mission Control, minimize and input switching, and turns off Fn + Win.</span>
+        </label>
       </div>
     {:else if !error}
       <p class="note">Reading the keyboard…</p>
@@ -138,6 +147,13 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 0 24px;
     align-items: start;
+  }
+  .hint {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.4;
   }
   .toggle {
     display: inline-flex;

@@ -51,6 +51,7 @@ export interface Settings {
   polling_hz: number;
   debounce_ms: number;
   win_lock: boolean;
+  mac_mode: boolean; // Fn shortcuts for macOS instead of Windows
   sleep: SleepTimers;
 }
 
@@ -106,6 +107,7 @@ export const api = {
   setPollingRate: (hz: number) => invoke<void>("set_polling_rate", { hz }),
   setDebounce: (ms: number) => invoke<void>("set_debounce", { ms }),
   setWinLock: (locked: boolean) => invoke<void>("set_win_lock", { locked }),
+  setMacMode: (mac: boolean) => invoke<void>("set_mac_mode", { mac }),
   setSleepTimers: (timers: SleepTimers) => invoke<void>("set_sleep_timers", { timers }),
 };
 

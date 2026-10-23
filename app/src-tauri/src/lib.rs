@@ -203,6 +203,11 @@ async fn set_win_lock(device: State<'_, Device>, locked: bool) -> Result<(), Str
 }
 
 #[tauri::command]
+async fn set_mac_mode(device: State<'_, Device>, mac: bool) -> Result<(), String> {
+    with_keyboard(&device, |kb| kb.set_mac_mode(mac))
+}
+
+#[tauri::command]
 async fn set_sleep_timers(device: State<'_, Device>, timers: SleepTimers) -> Result<(), String> {
     with_keyboard(&device, |kb| kb.set_sleep_timers(&timers))
 }
@@ -229,6 +234,7 @@ pub fn run() {
             set_polling_rate,
             set_debounce,
             set_win_lock,
+            set_mac_mode,
             set_sleep_timers
         ])
         .run(tauri::generate_context!())
