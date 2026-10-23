@@ -8,6 +8,8 @@ pub const MAX_BRIGHTNESS: u8 = 4;
 /// Color-mode values (low nibble of byte 4); 0..6 are the preset colors.
 pub const COLOR_CUSTOM: u8 = 7;
 pub const COLOR_RAINBOW: u8 = 8;
+/// Backlight mode that shows one of the keyboard's three per-key color pictures (option 0..2).
+pub const MODE_PICTURE: u8 = 13;
 pub const PRESET_COLORS: [(&str, [u8; 3]); 7] = [
     ("Red", [0xFF, 0, 0]),
     ("Orange", [0xFF, 0x80, 0]),
@@ -55,20 +57,28 @@ pub struct ModeInfo {
     pub id: u8,
     pub name: &'static str,
     pub speed: bool,
+    /// Whether the effect uses the color setting (custom color or rainbow).
+    pub color: bool,
     pub options: &'static [&'static str],
 }
 
 const fn m(id: u8, name: &'static str, speed: bool, options: &'static [&'static str]) -> ModeInfo {
-    ModeInfo { id, name, speed, options }
+    ModeInfo { id, name, speed, color: true, options }
 }
 
-/// Backlight modes offered for the Striker. Left out: 13 (per-key picture, needs per-key colors
-/// set first) and 20-22 (music/screen following, which need the host to stream data).
+const fn no_color(mut info: ModeInfo) -> ModeInfo {
+    info.color = false;
+    info
+}
+
+/// Backlight modes offered for the Striker. Left out: 20-22 (music/screen following, which need
+/// the host to stream data). Which effects take a color follows the official app's settings for
+/// this model: all but Off, Neon and the per-key picture.
 pub const MAIN_MODES: &[ModeInfo] = &[
-    m(0, "Off", false, &[]),
+    no_color(m(0, "Off", false, &[])),
     m(1, "Solid", false, &[]),
     m(2, "Breathing", true, &[]),
-    m(3, "Neon", true, &["Default", "Random"]),
+    no_color(m(3, "Neon", true, &["Default", "Random"])),
     m(4, "Wave", true, &["Right", "Left", "Down", "Up"]),
     m(5, "Ripple", true, &["Full", "Single"]),
     m(6, "Raindrop", true, &[]),
@@ -78,6 +88,7 @@ pub const MAIN_MODES: &[ModeInfo] = &[
     m(10, "Sine wave", true, &[]),
     m(11, "Kaleidoscope", true, &["Outward", "Inward"]),
     m(12, "Line wave", true, &["Right", "Left"]),
+    no_color(m(MODE_PICTURE, "Per-key colors", false, &["Picture 1", "Picture 2", "Picture 3"])),
     m(14, "Laser", true, &[]),
     m(15, "Circle wave", true, &["Anti-clockwise", "Clockwise"]),
     m(16, "Dazzle", true, &[]),
@@ -87,7 +98,7 @@ pub const MAIN_MODES: &[ModeInfo] = &[
 ];
 
 pub const SIDE_MODES: &[ModeInfo] = &[
-    m(0, "Off", false, &[]),
+    no_color(m(0, "Off", false, &[])),
     m(1, "Solid", false, &[]),
     m(2, "Breathing", true, &[]),
     m(3, "Neon", true, &[]),
@@ -130,8 +141,14 @@ impl Keyboard {
             Zone::Side => l.speed,
         };
         p[3] = l.brightness;
-        p[4] = (l.option << 4) | l.color;
-        p[5..8].copy_from_slice(&l.rgb);
+        if zone == Zone::Main && l.mode == MODE_PICTURE {
+            // As the official app sends it: no color nibble, and this fixed RGB.
+            p[4] = l.option << 4;
+            p[5..8].copy_from_slice(&[0x00, 0xC8, 0xC8]);
+        } else {
+            p[4] = (l.option << 4) | l.color;
+            p[5..8].copy_from_slice(&l.rgb);
+        }
         checksum(&mut p, 8);
         self.send(&p)
     }

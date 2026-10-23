@@ -17,8 +17,21 @@ export interface ModeInfo {
   id: number;
   name: string;
   speed: boolean;
+  color: boolean; // whether the effect uses the color setting
   options: string[];
 }
+
+// A key in the Striker's drawing: which per-key slot it uses and where it is drawn.
+export interface Key {
+  label: string;
+  slot: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export type Picture = RGB[]; // one color per key slot, 128 slots
 
 export interface Info {
   firmware: number; // 0x0105 = 1.05
@@ -59,6 +72,7 @@ export const MAX_FRAMES = 50;
 
 export const COLOR_CUSTOM = 7;
 export const COLOR_RAINBOW = 8;
+export const MODE_PICTURE = 13; // per-key colors; the option picks picture 1..3
 export const DELAY_UNIT_MS = 20;
 
 // Swatches are sent as custom RGB (color 7), the path the official app uses.
@@ -78,6 +92,9 @@ export const api = {
   modes: (zone: Zone) => invoke<ModeInfo[]>("modes", { zone }),
   getLighting: (zone: Zone) => invoke<Lighting>("get_lighting", { zone }),
   setLighting: (zone: Zone, lighting: Lighting) => invoke<void>("set_lighting", { zone, lighting }),
+  keys: () => invoke<Key[]>("keys"),
+  getPicture: (picture: number) => invoke<Picture>("get_picture", { picture }),
+  setPicture: (picture: number, colors: Picture) => invoke<void>("set_picture", { picture, colors }),
   library: () => invoke<Animation[]>("library"),
   saveScreen: (slug: string | null, name: string, kind: Kind, delay: number, frames: Frame[]) =>
     invoke<Animation>("save_screen", { slug, name, kind, delay, frames }),

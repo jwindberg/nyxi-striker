@@ -5,7 +5,7 @@
 //! see the README for where that is on each platform. The ones included with the app are a
 //! starter set copied there, after which they are the user's to edit or delete like any other.
 
-use nyxi_core::{lighting, screen, Animation, Frame, Info, Kind, Keyboard, Lighting, ModeInfo, Settings, SleepTimers, Zone};
+use nyxi_core::{lighting, screen, Animation, Frame, Info, Key, Kind, Keyboard, Lighting, ModeInfo, Picture, Settings, SleepTimers, Zone, KEYS};
 use std::{fs, path::PathBuf, sync::Mutex};
 use tauri::{AppHandle, Manager, State};
 
@@ -42,6 +42,38 @@ async fn get_lighting(device: State<'_, Device>, zone: Zone) -> Result<Lighting,
 #[tauri::command]
 async fn set_lighting(device: State<'_, Device>, zone: Zone, lighting: Lighting) -> Result<(), String> {
     with_keyboard(&device, |kb| kb.set_lighting(zone, &lighting))
+}
+
+#[tauri::command]
+fn keys() -> Vec<Key> {
+    KEYS.to_vec()
+}
+
+/// Reading and uploading act on the picture the backlight shows, so these only run while the
+/// per-key colors mode shows `picture` (0..2); otherwise the effect was changed meanwhile.
+fn showing_picture(kb: &Keyboard, picture: u8) -> nyxi_core::Result<()> {
+    let l = kb.lighting(Zone::Main)?;
+    if l.mode == lighting::MODE_PICTURE && l.option == picture {
+        Ok(())
+    } else {
+        Err(nyxi_core::Error::Invalid(format!("the backlight is not showing picture {}", picture + 1)))
+    }
+}
+
+#[tauri::command]
+async fn get_picture(device: State<'_, Device>, picture: u8) -> Result<Picture, String> {
+    with_keyboard(&device, |kb| {
+        showing_picture(kb, picture)?;
+        kb.picture()
+    })
+}
+
+#[tauri::command]
+async fn set_picture(device: State<'_, Device>, picture: u8, colors: Picture) -> Result<(), String> {
+    with_keyboard(&device, |kb| {
+        showing_picture(kb, picture)?;
+        kb.set_picture(&colors)
+    })
 }
 
 fn screens_dir(app: &AppHandle) -> Result<PathBuf, String> {
@@ -184,6 +216,9 @@ pub fn run() {
             modes,
             get_lighting,
             set_lighting,
+            keys,
+            get_picture,
+            set_picture,
             library,
             restore_included,
             save_screen,

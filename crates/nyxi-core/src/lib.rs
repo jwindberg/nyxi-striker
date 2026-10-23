@@ -4,14 +4,18 @@
 //! interface (USB interface 2, usage page 0xFFFF, usage 2). A GET is a SET of the GET
 //! command followed by a feature-report read.
 
+pub mod keys;
 pub mod lighting;
+pub mod picture;
 pub mod screen;
 pub mod settings;
 
 use hidapi::{HidApi, HidDevice};
 use std::{thread, time::Duration};
 
+pub use keys::{Key, KEYS};
 pub use lighting::{Lighting, ModeInfo, Zone};
+pub use picture::Picture;
 pub use screen::{Animation, Frame, Kind};
 pub use settings::{Settings, SleepTimers};
 
@@ -80,6 +84,16 @@ impl Keyboard {
 
     /// Send a GET command and return the 64-byte reply, checking it echoes the command.
     pub fn query(&self, cmd: u8, args: &[u8]) -> Result<[u8; 64]> {
+        let reply = self.query_raw(cmd, args)?;
+        if reply[0] != cmd {
+            return Err(Error::BadReply { cmd, reply: reply[..16].to_vec() });
+        }
+        Ok(reply)
+    }
+
+    /// Send a GET command and return the 64-byte reply as is. Data replies (per-key colors,
+    /// key map) carry no command byte, so they can't be checked.
+    pub fn query_raw(&self, cmd: u8, args: &[u8]) -> Result<[u8; 64]> {
         let mut p = [0u8; 64];
         p[0] = cmd;
         p[1..1 + args.len()].copy_from_slice(args);
@@ -90,9 +104,6 @@ impl Keyboard {
         let n = self.dev.get_feature_report(&mut buf)?;
         let mut reply = [0u8; 64];
         reply[..n.saturating_sub(1)].copy_from_slice(&buf[1..n]);
-        if reply[0] != cmd {
-            return Err(Error::BadReply { cmd, reply: reply[..16].to_vec() });
-        }
         Ok(reply)
     }
 

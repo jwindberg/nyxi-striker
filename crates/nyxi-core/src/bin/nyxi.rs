@@ -2,12 +2,13 @@
 //!
 //!   nyxi info                 firmware version and device id
 //!   nyxi light [main|side]    read a lighting zone
+//!   nyxi picture              the colored keys of the per-key picture being shown
 //!   nyxi screen list          list the animation library
 //!   nyxi screen <name>        play a library animation on the screen
 //!   nyxi settings             polling rate, debounce, Windows-key lock, sleep timers
 //!   nyxi set polling <hz> | debounce <ms> | winlock <on|off> | sleep <lbt> <l24> <dbt> <d24>
 
-use nyxi_core::{lighting, screen, Keyboard, Zone};
+use nyxi_core::{lighting, screen, Keyboard, Zone, KEYS};
 use std::process::exit;
 
 fn main() {
@@ -37,6 +38,15 @@ fn run(args: &[&str]) -> nyxi_core::Result<()> {
             let name = lighting::modes(zone).iter().find(|m| m.id == l.mode).map_or("?", |m| m.name);
             println!("{zone:?}: {name} ({l:?})");
         }
+        ["picture"] => {
+            let picture = Keyboard::open()?.picture()?;
+            for key in KEYS {
+                let [r, g, b] = picture[key.slot as usize];
+                if r | g | b != 0 {
+                    println!("{:10} {r:02x}{g:02x}{b:02x}", key.label);
+                }
+            }
+        }
         ["screen", "list"] => {
             for a in screen::library() {
                 println!("{:12} {:2} frames  {}", a.slug, a.frames.len(), a.about);
@@ -59,7 +69,7 @@ fn run(args: &[&str]) -> nyxi_core::Result<()> {
             deep_24g: num(d)?,
         })?,
         _ => {
-            eprintln!("usage: nyxi info | light [main|side] | screen list | screen <name> | settings | set ...");
+            eprintln!("usage: nyxi info | light [main|side] | picture | screen list | screen <name> | settings | set ...");
             exit(2);
         }
     }

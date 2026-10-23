@@ -103,13 +103,13 @@ A GET command is its SET command plus 0x80, and every GET uses checksum BIT7. Th
 | 0x07 | 0x87 | LEDPARAM (backlight) | See Backlight; set uses BIT8 | Verified |
 | 0x08 | 0x88 | SLEDPARAM (second zone) | Same layout as LEDPARAM; set uses BIT8 | Get verified |
 | 0x0A | 0x8A | KEYENABLE | Not decoded | Unverified |
-| 0x0C | 0x8C | USERPIC | Full per-key color picture, multi-packet | Unverified |
+| 0x0C | 0x8C | USERPIC | Per-key color picture being shown, see Per-key custom colors | Verified (uploaded, read back, restored) |
 | 0x0D | — | AUDIO | Music-reactive lighting frames | Unverified |
 | 0x0E | — | WINDOS | Screen-color lighting frames | Unverified |
 | 0x11 | 0x91 | DEBOUNCE | Set [2] ms; get reply [2] | Verified (set 3, read back, restored to 1) |
 | 0x12 | 0x92 | SLEEPTIME | 16-bit seconds, see Other settings | Verified (changed, read back, restored) |
 | 0x13 | 0x93 | KEYMATRIX_SIMPLE | One key remap, see Other settings | Verified (set, read back with 0x89, restored) |
-| 0x14 | 0x94 | USERPIC_SIMPLE | One key's custom color: [1] slot, [2] key index, [8..10] RGB | Unverified |
+| 0x14 | 0x94 | USERPIC_SIMPLE | One key's custom color: [1] picture, [2] key slot, [8..10] RGB | Single writes verified; drops writes in quick succession, use 0x0C |
 | 0x15 | 0x95 | FN_SIMPLE | One Fn-layer key remap | Verified (set, read back with 0x90, restored) |
 | 0x16 | 0x96 | MACRO_SIMPLE | Macro body in 56-byte chunks; read back with 0x8B | Write verified |
 | 0x17 | 0x97 | CMD_AUTOOSEN | Not decoded | Get verified (reads 0) |
@@ -144,7 +144,7 @@ Color mode (low nibble of byte 4):
 | 7 | Custom RGB from bytes 5..7 (app name `NORMAL`) |
 | 8 | Rainbow / multicolor (app name `DAZZLE`) |
 
-The app only writes 7 or 8; presets appear when they are chosen with Fn keys. Writing a preset value is untested. Quirk: the app sends pure white FFFFFF as FAFFFA and maps it back on read.
+Every effect uses the color except Off, Neon and the per-key picture (13), going by the official app's settings for the Striker (`rgb`/`dazzle` flags) and by its Neon packet, which has no color or option. The app only writes 7 or 8; presets appear when they are chosen with Fn keys. Writing a preset value is untested. Quirk: the app sends pure white FFFFFF as FAFFFA and maps it back on read.
 
 Modes (byte 1) and their options (high nibble of byte 4). "Offered" means the app shows the mode for the Striker.
 
@@ -163,7 +163,7 @@ Modes (byte 1) and their options (high nibble of byte 4). "Offered" means the ap
 | 10 | LightSineWave | — | Yes |
 | 11 | LightKaleidoscope | 0 out, 1 in | Yes |
 | 12 | LightLineWave | 0 right, 1 left | Yes |
-| 13 | LightUserPicture (per-key colors) | Slot: 0x0, 0x1, 0x2 for pictures 1..3; app sends RGB 00 C8 C8 | Yes |
+| 13 | LightUserPicture (per-key colors) | 0, 1, 2 for pictures 1..3 (byte 4 = 0x00, 0x10, 0x20; color nibble 0); app sends RGB 00 C8 C8 | Yes |
 | 14 | LightLaser | — | Yes |
 | 15 | LightCircleWave | 0 anti-clockwise, 1 clockwise | Yes |
 | 16 | LightDazzing | — | Yes |
@@ -393,7 +393,13 @@ This is the least certain part of the document; check it against `setMacro` in `
 
 ### Per-key custom colors
 
-One key at a time: `14 [picture slot] [key slot] 00 00 00 00 [csum] [R] [G] [B]`. The picture is shown by backlight mode 13 with the matching slot in the option nibble. A whole-picture upload also exists (0x0C), not decoded.
+The keyboard stores three pictures, each one RGB color per key slot (128 slots, 384 bytes; the slots are the key map's, see `zK`). Backlight mode 13 shows one, chosen by the option nibble. Verified on hardware: reading and uploading act on **the picture being shown**, whatever the packet says, so select it with mode 13 first, as the official app does.
+
+- **Read:** GET `8C 00 [chunk]` for chunks 0..5. Each reply is 64 bytes of picture data (no command byte); slot n is at bytes 3n..3n+2. Chunks above 5 return repeats of other data, not the other pictures.
+- **Upload:** 7 packets `0C 00 80 01 [chunk 0..6] 00 00 [BIT7 csum]` followed by 56 data bytes (chunk 6 is mostly padding). The app waits 20 ms between packets and pauses afterwards; 500 ms was enough for an immediate readback to match.
+- **One key:** `14 [picture 0..2] [slot] 00 00 00 00 [csum] [R] [G] [B]` changes one key of any picture, shown or not. A single write sticks, but writes sent in quick succession are mostly dropped (half were lost even 200 ms apart), so the app never uses it; neither does ours.
+
+As shipped, picture 1 lights WASD and the arrow keys red, and pictures 2 and 3 have red, green and blue key groups. (On the test keyboard pictures 2 and 3 were later reduced to their red keys after test writes.)
 
 ## Vendor event channel (interface 1)
 

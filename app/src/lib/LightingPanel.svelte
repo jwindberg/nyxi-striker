@@ -2,7 +2,8 @@
   // Controls for one lighting zone. Reads the keyboard's current setting, and writes the
   // whole setting back on every change (debounced while sliders are dragged).
   import { onMount } from "svelte";
-  import { api, COLOR_CUSTOM, COLOR_RAINBOW, SWATCHES, fromHex, toHex, type Lighting, type ModeInfo, type RGB, type Zone } from "./api";
+  import { api, COLOR_CUSTOM, COLOR_RAINBOW, MODE_PICTURE, SWATCHES, fromHex, toHex, type Lighting, type ModeInfo, type RGB, type Zone } from "./api";
+  import PictureEditor from "./PictureEditor.svelte";
 
   let { zone, title, note = "" }: { zone: Zone; title: string; note?: string } = $props();
 
@@ -12,6 +13,13 @@
 
   let mode = $derived(modes.find((m) => m.id === light?.mode));
   let isOff = $derived(light?.mode === 0);
+  // The per-key picture the keyboard is known to show; the editor opens only once it does.
+  let shownPicture = $state<number | null>(null);
+  let pictureBusy = $state(false);
+
+  function noteShown() {
+    shownPicture = zone === "main" && light?.mode === MODE_PICTURE ? light.option : null;
+  }
 
   onMount(load);
 
@@ -20,6 +28,7 @@
     try {
       modes = await api.modes(zone);
       light = await api.getLighting(zone);
+      noteShown();
     } catch (e) {
       error = String(e);
     }
@@ -32,6 +41,7 @@
       if (!light) return;
       try {
         await api.setLighting(zone, light);
+        noteShown();
         error = "";
       } catch (e) {
         error = String(e);
@@ -41,8 +51,10 @@
 
   function setMode(m: ModeInfo) {
     if (!light) return;
+    if (light.mode !== m.id) light.option = 0;
     light.mode = m.id;
-    if (light.option >= m.options.length) light.option = 0;
+    // The per-key mode reads back without a color; give the Color row one it can show.
+    if (light.color !== COLOR_CUSTOM && light.color !== COLOR_RAINBOW) light.color = COLOR_RAINBOW;
     if (m.id !== 0 && light.brightness === 0) light.brightness = 4;
     apply();
   }
@@ -75,7 +87,7 @@
     <div class="selects">
       <label class="field">
         <span class="label">Effect</span>
-        <select value={light.mode} onchange={(e) => setMode(modes.find((m) => m.id === Number(e.currentTarget.value))!)}>
+        <select value={light.mode} disabled={pictureBusy} onchange={(e) => setMode(modes.find((m) => m.id === Number(e.currentTarget.value))!)}>
           {#each modes as m (m.id)}
             <option value={m.id}>{m.name}</option>
           {/each}
@@ -85,7 +97,7 @@
       <!-- Always present (disabled when unused) so the layout never shifts. -->
       <label class="field" class:inactive={!mode?.options.length}>
         <span class="label">Variant</span>
-        <select value={light.option} disabled={!mode?.options.length} onchange={(e) => { light!.option = Number(e.currentTarget.value); apply(); }}>
+        <select value={light.option} disabled={!mode?.options.length || pictureBusy} onchange={(e) => { light!.option = Number(e.currentTarget.value); apply(); }}>
           {#each mode?.options.length ? mode.options : ["None"] as opt, i}
             <option value={i}>{opt}</option>
           {/each}
@@ -104,27 +116,35 @@
       </label>
     </div>
 
-    <div class:inactive={isOff}>
-      <div class="field">
-        <span class="label">Color</span>
-        <div class="swatches">
-          <button class="swatch rainbow" class:active={light.color === COLOR_RAINBOW} title="Rainbow" aria-label="Rainbow" onclick={() => setColor(null)}></button>
-          {#each SWATCHES as s}
-            <button
-              class="swatch"
-              class:active={light.color === COLOR_CUSTOM && same(light.rgb, s.rgb)}
-              style:background={toHex(s.rgb)}
-              title={s.name}
-              aria-label={s.name}
-              onclick={() => setColor(s.rgb)}
-            ></button>
-          {/each}
-          <label class="swatch picker" class:active={light.color === COLOR_CUSTOM && !SWATCHES.some((s) => same(light!.rgb, s.rgb))} title="Custom color">
-            <input type="color" value={toHex(light.rgb)} oninput={(e) => { light!.color = COLOR_CUSTOM; light!.rgb = fromHex(e.currentTarget.value); apply(150); }} />
-          </label>
+    {#if light.mode === MODE_PICTURE}
+      {#if shownPicture === light.option}
+        {#key shownPicture}
+          <PictureEditor picture={shownPicture} bind:busy={pictureBusy} />
+        {/key}
+      {/if}
+    {:else}
+      <div class:inactive={!mode?.color}>
+        <div class="field">
+          <span class="label">Color</span>
+          <div class="swatches">
+            <button class="swatch rainbow" class:active={light.color === COLOR_RAINBOW} title="Rainbow" aria-label="Rainbow" onclick={() => setColor(null)}></button>
+            {#each SWATCHES as s}
+              <button
+                class="swatch"
+                class:active={light.color === COLOR_CUSTOM && same(light.rgb, s.rgb)}
+                style:background={toHex(s.rgb)}
+                title={s.name}
+                aria-label={s.name}
+                onclick={() => setColor(s.rgb)}
+              ></button>
+            {/each}
+            <label class="swatch picker" class:active={light.color === COLOR_CUSTOM && !SWATCHES.some((s) => same(light!.rgb, s.rgb))} title="Custom color">
+              <input type="color" value={toHex(light.rgb)} oninput={(e) => { light!.color = COLOR_CUSTOM; light!.rgb = fromHex(e.currentTarget.value); apply(150); }} />
+            </label>
+          </div>
         </div>
       </div>
-    </div>
+    {/if}
   {:else if !error}
     <p class="note">Reading the keyboard…</p>
   {/if}
@@ -139,38 +159,5 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0 24px;
-  }
-  .swatches {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .swatch {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    cursor: pointer;
-    padding: 0;
-    position: relative;
-  }
-  .swatch.active {
-    outline: 3px solid var(--accent);
-    outline-offset: 2px;
-  }
-  .rainbow {
-    background: conic-gradient(red, orange, yellow, lime, cyan, blue, magenta, red);
-  }
-  .picker {
-    background: conic-gradient(from 90deg, #888, #ddd, #888);
-    overflow: hidden;
-  }
-  .picker input {
-    position: absolute;
-    inset: -6px;
-    width: 44px;
-    height: 44px;
-    opacity: 0;
-    cursor: pointer;
   }
 </style>
