@@ -19,22 +19,12 @@ Icon?
 
 # NYXI's proprietary software and documents: keep local, never publish
 extracted_asar/
-extracted_asar.old/
 CA01-Striker-Retro-Mechanical-Keyboard-user-manual.pdf
-manual_text.txt
-manual_extracted.txt
-manual_pages/
 
 # Local toolchain workarounds (Linux build without sudo)
 electron-local/
 libudev-local/
 protoc-local/
-*.deb
-
-# Compiled leftovers and duplicates
-nyxi-driver/nyxi_direct
-/driver.proto
-/supported_devices.toml
 
 # Packaged builds (contain NYXI code)
 release/

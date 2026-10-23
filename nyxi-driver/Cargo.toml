@@ -15,14 +15,6 @@ path = "src/bin/nyxi-driver.rs"
 name = "iot_driver"
 path = "src/bin/iot_driver.rs"
 
-[[bin]]
-name = "list_hid"
-path = "src/bin/list_hid.rs"
-
-[[bin]]
-name = "test_led"
-path = "src/bin/test_led.rs"
-
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
