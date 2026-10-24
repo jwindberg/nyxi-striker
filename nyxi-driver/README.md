@@ -27,6 +27,6 @@ Both binaries in `target/release/` are the same program: `nyxi-driver`, and `iot
 
 - `src/device_manager.rs`: device discovery, feature reports and the checksum.
 - `src/grpc_service.rs`: the gRPC methods.
-- `src/config.rs` and `supported_devices.toml`: which devices (VID, PID, usage) the app is offered.
+- `src/config.rs`: the devices offered to the app, the Striker on its cable and on its 2.4 GHz receiver.
 - `src/db.rs`: the app's database.
 - `src/system.rs`: computer stats.

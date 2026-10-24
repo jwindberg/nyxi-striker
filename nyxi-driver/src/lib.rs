@@ -5,7 +5,6 @@ pub mod grpc_service;
 pub mod proto;
 pub mod system;
 
-use config::SupportConfig;
 use db::DbManager;
 use device_manager::DeviceManager;
 use grpc_service::DriverGrpcService;
@@ -33,12 +32,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("Starting NYXI cross-platform driver (iot_driver)...");
 
-    // Load device config
-    let config = SupportConfig::load_or_default();
-
     // Initialize subsystems
     let db = DbManager::new();
-    let device_mgr = Arc::new(DeviceManager::new(config)?);
+    let device_mgr = Arc::new(DeviceManager::new()?);
     let system_monitor = Arc::new(SystemMonitor::new());
 
     // Start background hardware polling loop

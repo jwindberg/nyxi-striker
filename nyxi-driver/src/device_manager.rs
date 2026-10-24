@@ -1,4 +1,4 @@
-use crate::config::SupportConfig;
+use crate::config;
 use crate::proto::driver::*;
 use hidapi::{HidApi, HidDevice};
 use parking_lot::Mutex;
@@ -8,7 +8,6 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 
 pub struct DeviceManager {
-    config: SupportConfig,
     hid_api: Arc<Mutex<HidApi>>,
     devices: Arc<Mutex<HashMap<String, Arc<Mutex<HidDevice>>>>>,
     broadcaster: broadcast::Sender<DeviceList>,
@@ -16,12 +15,11 @@ pub struct DeviceManager {
 }
 
 impl DeviceManager {
-    pub fn new(config: SupportConfig) -> Result<Self, String> {
+    pub fn new() -> Result<Self, String> {
         let hid_api = HidApi::new().map_err(|e| format!("Failed to init HID API: {}", e))?;
         let (broadcaster, _) = broadcast::channel(32);
 
         Ok(Self {
-            config,
             hid_api: Arc::new(Mutex::new(hid_api)),
             devices: Arc::new(Mutex::new(HashMap::new())),
             broadcaster,
@@ -59,33 +57,11 @@ impl DeviceManager {
             let usage_page = dev_info.usage_page();
             let interface = dev_info.interface_number();
 
-            if let Some(matched) = self.config.is_supported(vid, pid, usage, usage_page, interface) {
+            if let Some(matched) = config::find(vid, pid, usage, usage_page, interface) {
                 let path_str = dev_info.path().to_string_lossy().to_string();
-                let dev_id = match (vid, pid) {
-                    (0x3151, 0x4015) => 1473,
-                    (0x3151, 0x4011) => 2147485121u32,
-                    (0x3151, 0x4038) => 1473,
-                    _ => ((vid as u32) << 16) | (pid as u32),
-                };
+                let dev_id = matched.id;
 
-                let is_boot = self.config.boot.iter().any(|b| {
-                    b.vid.map(|v| v as u16 == vid).unwrap_or(false)
-                        && b.pid.map(|p| p as u16 == pid).unwrap_or(false)
-                });
-                let is_vender = self.config.vender.iter().any(|v| {
-                    v.vid.map(|v_id| v_id as u16 == vid).unwrap_or(false)
-                        && v.pid.map(|p| p as u16 == pid).unwrap_or(false)
-                });
-
-                let devtype = if is_boot {
-                    DeviceType::Yzwboot as i32
-                } else if is_vender {
-                    DeviceType::Yzwvender as i32
-                } else {
-                    DeviceType::Yzwkeyboard as i32
-                };
-
-                if matched.dongle_common {
+                if matched.dongle {
                     let dangle = DangleCommon {
                         keyboard: Some(DangleStatus {
                             status_oneof: Some(dangle_status::StatusOneof::Status(Status24 {
@@ -107,8 +83,8 @@ impl DeviceManager {
                     });
                 } else {
                     let dev = Device {
-                        devtype,
-                        is24: matched.dongle_common,
+                        devtype: DeviceType::Yzwkeyboard as i32,
+                        is24: false,
                         path: path_str,
                         id: dev_id,
                         battery: 100,
