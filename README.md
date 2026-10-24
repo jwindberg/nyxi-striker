@@ -40,6 +40,10 @@ Every image and animation the Screen tab lists is a text file in a folder on tha
 
 The app also shows the exact folder at the bottom of its Screen tab. To use them on another computer, copy the `.txt` files into that computer's folder (for example `scp ~/.local/share/com.jwindberg.nyxi/screens/*.txt othermachine:...`) and reopen the Screen tab. A file added to `animations/` is included with the app for everyone; a newer app copies only screens it hasn't copied before (recorded in the folder's `.included` file), so one you deleted stays deleted. "Restore included screens" at the bottom of the Screen tab puts them all back as they came, replacing your changes to them. ("Built-in" is kept for what the keyboard itself has: the jumping bird, Pac-Man and cat.) Each file is plain text: `; name:`, `; type: image` or `; type: animation`, and `; delay:` lines, then 9×9 frames of `#` and `.`; without a type line, one frame means an image.
 
+### Per-key color pictures
+
+The Lighting tab's "Per-key colors" effect shows one of the keyboard's three stored pictures and lets you paint it. Pictures can also be saved on the computer, one text file each, in a `pictures` folder next to `screens` (the exact path is shown under the editor). Each file has a `; name:` line, then one line per lit key: its slot, its color as RRGGBB and its label.
+
 ## Running the official NYXI app on macOS or Linux
 
 Needs Rust (`rustup`), Node.js/npm and access to the private repo `jwindberg/nyxi-official-app`. On Linux the driver build also needs `sudo apt install libudev-dev`.

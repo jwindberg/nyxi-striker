@@ -5,7 +5,7 @@
 //! see the README for where that is on each platform. The ones included with the app are a
 //! starter set copied there, after which they are the user's to edit or delete like any other.
 
-use nyxi_core::{lighting, screen, Animation, Frame, Info, Key, Kind, Keyboard, Lighting, ModeInfo, Picture, Settings, SleepTimers, Zone, KEYS};
+use nyxi_core::{lighting, picture, screen, Animation, Frame, Info, Key, Kind, Keyboard, Lighting, ModeInfo, Picture, SavedPicture, Settings, SleepTimers, Zone, KEYS};
 use std::{fs, path::PathBuf, sync::Mutex};
 use tauri::{AppHandle, Manager, State};
 
@@ -76,18 +76,43 @@ async fn set_picture(device: State<'_, Device>, picture: u8, colors: Picture) ->
     })
 }
 
-fn screens_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("screens");
+/// A folder in the app's data folder: "screens" or "pictures".
+fn data_dir(app: &AppHandle, name: &str) -> Result<PathBuf, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join(name);
     fs::create_dir_all(&dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     Ok(dir)
 }
 
+fn screens_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    data_dir(app, "screens")
+}
+
 /// Only slugs made by `screen::slugify` are accepted, so a file name can't leave the folder.
-fn screen_file(app: &AppHandle, slug: &str) -> Result<PathBuf, String> {
+fn data_file(app: &AppHandle, folder: &str, slug: &str) -> Result<PathBuf, String> {
     if slug.is_empty() || !slug.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') {
-        return Err(format!("invalid screen id {slug:?}"));
+        return Err(format!("invalid file id {slug:?}"));
     }
-    Ok(screens_dir(app)?.join(format!("{slug}.txt")))
+    Ok(data_dir(app, folder)?.join(format!("{slug}.txt")))
+}
+
+/// The .txt files in a data folder, sorted by name, as (slug, contents).
+fn text_files(app: &AppHandle, folder: &str) -> Result<Vec<(String, String)>, String> {
+    let mut paths: Vec<PathBuf> = fs::read_dir(data_dir(app, folder)?)
+        .map_err(|e| e.to_string())?
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| p.extension().is_some_and(|x| x == "txt"))
+        .collect();
+    paths.sort();
+    Ok(paths
+        .iter()
+        .filter_map(|p| Some((p.file_stem()?.to_string_lossy().into_owned(), fs::read_to_string(p).ok()?)))
+        .collect())
+}
+
+/// A fresh slug from a name, not taken by any of `taken`.
+fn new_slug(name: &str, taken: &[String]) -> String {
+    let base = screen::slugify(name);
+    (1..).map(|n| if n == 1 { base.clone() } else { format!("{base}-{n}") }).find(|s| !taken.contains(s)).unwrap()
 }
 
 /// Lists the included screens already copied into the folder, one id per line, so one the
@@ -115,15 +140,9 @@ fn add_included(app: &AppHandle) -> Result<(), String> {
 }
 
 fn user_screens(app: &AppHandle) -> Result<Vec<Animation>, String> {
-    let mut paths: Vec<PathBuf> = fs::read_dir(screens_dir(app)?)
-        .map_err(|e| e.to_string())?
-        .filter_map(|e| e.ok().map(|e| e.path()))
-        .filter(|p| p.extension().is_some_and(|x| x == "txt"))
-        .collect();
-    paths.sort();
-    Ok(paths
+    Ok(text_files(app, "screens")?
         .iter()
-        .filter_map(|p| Some(screen::parse(&p.file_stem()?.to_string_lossy(), &fs::read_to_string(p).ok()?)))
+        .map(|(slug, text)| screen::parse(slug, text))
         .filter(|a| !a.frames.is_empty())
         .collect())
 }
@@ -154,27 +173,53 @@ fn save_screen(app: AppHandle, slug: Option<String>, name: String, kind: Kind, d
     let name = if name.trim().is_empty() { "Untitled".to_string() } else { name.trim().to_string() };
     let slug = match slug {
         Some(slug) => slug,
-        None => {
-            let base = screen::slugify(&name);
-            let taken: Vec<String> = user_screens(&app)?.into_iter().map(|a| a.slug).collect();
-            (1..).map(|n| if n == 1 { base.clone() } else { format!("{base}-{n}") }).find(|s| !taken.contains(s)).unwrap()
-        }
+        None => new_slug(&name, &user_screens(&app)?.into_iter().map(|a| a.slug).collect::<Vec<_>>()),
     };
     let animation = Animation { slug: slug.clone(), name, about: String::new(), kind, delay, frames };
-    let path = screen_file(&app, &slug)?;
+    let path = data_file(&app, "screens", &slug)?;
     fs::write(&path, screen::to_text(&animation)).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
     Ok(animation)
 }
 
 #[tauri::command]
 fn delete_screen(app: AppHandle, slug: String) -> Result<(), String> {
-    let path = screen_file(&app, &slug)?;
+    let path = data_file(&app, "screens", &slug)?;
     fs::remove_file(&path).map_err(|e| format!("cannot delete {}: {e}", path.display()))
 }
 
 #[tauri::command]
 fn screens_folder(app: AppHandle) -> Result<String, String> {
     Ok(screens_dir(&app)?.display().to_string())
+}
+
+/// Pictures saved on this computer, in <app data>/pictures, sorted by file name.
+#[tauri::command]
+fn saved_pictures(app: AppHandle) -> Result<Vec<SavedPicture>, String> {
+    Ok(text_files(&app, "pictures")?.iter().map(|(slug, text)| picture::parse(slug, text)).collect())
+}
+
+/// Save a picture. A new one (`slug` = None) gets a fresh id from its name.
+#[tauri::command]
+fn save_picture(app: AppHandle, slug: Option<String>, name: String, colors: Picture) -> Result<SavedPicture, String> {
+    let name = if name.trim().is_empty() { "Untitled".to_string() } else { name.trim().to_string() };
+    let slug = match slug {
+        Some(slug) => slug,
+        None => new_slug(&name, &saved_pictures(app.clone())?.into_iter().map(|p| p.slug).collect::<Vec<_>>()),
+    };
+    let path = data_file(&app, "pictures", &slug)?;
+    fs::write(&path, picture::to_text(&name, &colors)).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+    Ok(picture::parse(&slug, &fs::read_to_string(&path).map_err(|e| e.to_string())?))
+}
+
+#[tauri::command]
+fn delete_picture(app: AppHandle, slug: String) -> Result<(), String> {
+    let path = data_file(&app, "pictures", &slug)?;
+    fs::remove_file(&path).map_err(|e| format!("cannot delete {}: {e}", path.display()))
+}
+
+#[tauri::command]
+fn pictures_folder(app: AppHandle) -> Result<String, String> {
+    Ok(data_dir(&app, "pictures")?.display().to_string())
 }
 
 #[tauri::command]
@@ -224,6 +269,10 @@ pub fn run() {
             keys,
             get_picture,
             set_picture,
+            saved_pictures,
+            save_picture,
+            delete_picture,
+            pictures_folder,
             library,
             restore_included,
             save_screen,

@@ -33,6 +33,13 @@ export interface Key {
 
 export type Picture = RGB[]; // one color per key slot, 128 slots
 
+// A picture saved on this computer (a text file in the pictures folder).
+export interface SavedPicture {
+  slug: string;
+  name: string;
+  colors: Picture;
+}
+
 export interface Info {
   firmware: number; // 0x0105 = 1.05
   device_id: number;
@@ -96,6 +103,10 @@ export const api = {
   keys: () => invoke<Key[]>("keys"),
   getPicture: (picture: number) => invoke<Picture>("get_picture", { picture }),
   setPicture: (picture: number, colors: Picture) => invoke<void>("set_picture", { picture, colors }),
+  savedPictures: () => invoke<SavedPicture[]>("saved_pictures"),
+  savePicture: (slug: string | null, name: string, colors: Picture) => invoke<SavedPicture>("save_picture", { slug, name, colors }),
+  deletePicture: (slug: string) => invoke<void>("delete_picture", { slug }),
+  picturesFolder: () => invoke<string>("pictures_folder"),
   library: () => invoke<Animation[]>("library"),
   saveScreen: (slug: string | null, name: string, kind: Kind, delay: number, frames: Frame[]) =>
     invoke<Animation>("save_screen", { slug, name, kind, delay, frames }),

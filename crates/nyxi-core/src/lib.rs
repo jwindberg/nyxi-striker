@@ -15,7 +15,7 @@ use std::{thread, time::Duration};
 
 pub use keys::{Key, KEYS};
 pub use lighting::{Lighting, ModeInfo, Zone};
-pub use picture::Picture;
+pub use picture::{Picture, SavedPicture};
 pub use screen::{Animation, Frame, Kind};
 pub use settings::{Settings, SleepTimers};
 

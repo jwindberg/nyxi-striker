@@ -45,3 +45,57 @@ impl Keyboard {
         Ok(())
     }
 }
+
+/// A picture saved on the computer, as a text file: a `; name:` line, then one line per lit key
+/// with its slot, its color as RRGGBB and, for reading, its label. Unlisted keys are off.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SavedPicture {
+    pub slug: String,
+    pub name: String,
+    pub colors: Picture,
+}
+
+pub fn parse(slug: &str, text: &str) -> SavedPicture {
+    let mut saved = SavedPicture { slug: slug.into(), name: slug.into(), colors: vec![[0; 3]; SLOTS] };
+    for line in text.lines() {
+        if let Some(meta) = line.strip_prefix(';') {
+            if let Some(("name", value)) = meta.split_once(':').map(|(k, v)| (k.trim(), v.trim())) {
+                saved.name = value.into();
+            }
+            continue;
+        }
+        let mut fields = line.split_whitespace();
+        let (Some(slot), Some(hex)) = (fields.next(), fields.next()) else { continue };
+        let (Ok(slot), Ok(rgb)) = (slot.parse::<usize>(), u32::from_str_radix(hex, 16)) else { continue };
+        if slot < SLOTS && hex.len() == 6 {
+            saved.colors[slot] = [(rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8];
+        }
+    }
+    saved
+}
+
+pub fn to_text(name: &str, colors: &[[u8; 3]]) -> String {
+    let mut out = format!("; name: {}\n; slot color key\n", name.replace('\n', " "));
+    for key in crate::KEYS {
+        let [r, g, b] = colors.get(key.slot as usize).copied().unwrap_or_default();
+        if r | g | b != 0 {
+            out += &format!("{} {r:02x}{g:02x}{b:02x} {}\n", key.slot, key.label);
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn text_round_trip() {
+        let mut colors = vec![[0; 3]; SLOTS];
+        colors[9] = [0xFF, 0x80, 0x00];
+        colors[41] = [1, 2, 3]; // space bar, whose label is empty
+        let saved = parse("x", &to_text("Test", &colors));
+        assert_eq!(saved.name, "Test");
+        assert_eq!(saved.colors, colors);
+    }
+}
