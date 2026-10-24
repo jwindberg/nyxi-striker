@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import DotScreen from "$lib/DotScreen.svelte";
+  import KeyboardArt from "$lib/KeyboardArt.svelte";
   import LightingPanel from "$lib/LightingPanel.svelte";
   import ScreenPanel from "$lib/ScreenPanel.svelte";
   import SettingsPanel from "$lib/SettingsPanel.svelte";
@@ -29,12 +29,7 @@
 
 <main>
   <header>
-    <div class="keyboard">
-      <img src="/img/striker.png" alt="NYXI Striker keyboard" />
-      {#if shown}
-        <div class="overlay"><DotScreen frames={shown.frames} delay={shown.delay} /></div>
-      {/if}
-    </div>
+    <div class="keyboard"><KeyboardArt {shown} /></div>
     <div class="status">
       <h1>Striker</h1>
       {#if info}
@@ -84,25 +79,8 @@
     margin-bottom: 10px;
   }
   .keyboard {
-    position: relative;
     width: 420px;
     flex-shrink: 0;
-  }
-  .keyboard img {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-  /* The screen in striker.png (871x288): a 9x9 grid of dots, 5 px apart, from (732.5, 20). */
-  .overlay {
-    position: absolute;
-    left: calc(728 / 871 * 100%);
-    top: calc(15 / 288 * 100%);
-    width: calc(49 / 871 * 100%);
-    height: calc(52 / 288 * 100%);
-    background: var(--screen);
-    padding: 0.35% 0.25%;
-    box-sizing: border-box;
   }
   h1 {
     margin: 0 0 6px;
