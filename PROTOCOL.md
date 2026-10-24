@@ -480,9 +480,9 @@ The app's "firmware update" downloads files from NYXI's servers and drives these
 
 - [x] Does uploading to the screen switch it to the custom slot? Yes, immediately.
 - [x] Do multi-frame screen animations play, and what unit is the frame delay? Yes; about 20 ms per unit.
-- [ ] Is there any host command that chooses a built-in screen animation or turns the screen off?
-- [ ] What does the second lighting zone (0x08) light up on the Striker?
-- [ ] Do the GET replies work on macOS with the correct checksum?
+- [ ] Is there any host command that chooses a built-in screen animation? None found. The screen can only be turned off with its Fn shortcut.
+- [x] What does the second lighting zone (0x08) light up on the Striker? Nothing visible; see "Second lighting zone".
+- [x] Do the GET replies work on macOS with the correct checksum? Yes: the app reads its settings on macOS (2026-10-24).
 - [x] Can the key map, Fn layer and macros be read? Yes (0x89, 0x90, 0x8B); see "Reading the key map, Fn layer and macros".
 - [x] Does a macro run from a key? Yes: keypad / set to `09 00 00 00` typed the macro ("hi"), then was restored.
 - [x] Which bit does the keyboard use for Mac mode? Bit 1 (0x02); see Keyboard options.
