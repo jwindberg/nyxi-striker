@@ -1,6 +1,6 @@
 #!/bin/bash
 # Build the new app (app/) and install it for this user on macOS or Linux. Rerun to upgrade.
-#   macOS -> /Applications/NYXI.app
+#   macOS -> "/Applications/NYXI Striker.app"
 #   Linux -> ~/.local/bin/nyxi-striker, plus a menu entry "NYXI Striker"
 # On Windows use install-app.ps1.
 # Needs Rust and Node.js/npm; on Linux also WebKitGTK (sudo apt install libwebkit2gtk-4.1-dev build-essential).
@@ -21,9 +21,10 @@ npm ci --no-audit --no-fund
 
 if [ "$(uname)" = Darwin ]; then
     npx tauri build --bundles app
-    rm -rf /Applications/NYXI.app
-    cp -R "$ROOT/target/release/bundle/macos/NYXI.app" /Applications/
-    echo "Installed /Applications/NYXI.app"
+    # NYXI.app is the name older versions installed under.
+    rm -rf /Applications/NYXI.app "/Applications/NYXI Striker.app"
+    cp -R "$ROOT/target/release/bundle/macos/NYXI Striker.app" /Applications/
+    echo "Installed \"/Applications/NYXI Striker.app\""
     exit 0
 fi
 

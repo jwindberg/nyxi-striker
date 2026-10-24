@@ -20,8 +20,15 @@ try {
     Pop-Location
 }
 
+# Older versions installed as "NYXI"; uninstall that copy so only one app remains. Its uninstaller
+# keeps the saved screens and pictures unless asked otherwise, which /S never does.
+$Old = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\NYXI" -ErrorAction SilentlyContinue
+if ($Old -and $Old.UninstallString) {
+    Start-Process ($Old.UninstallString.Trim('"')) -ArgumentList "/S" -Wait
+}
+
 # The NSIS installer installs for the current user; /S runs it without prompts.
 $Setup = Get-ChildItem "$Root\target\release\bundle\nsis\*-setup.exe" |
     Sort-Object LastWriteTime | Select-Object -Last 1
 Start-Process $Setup.FullName -ArgumentList "/S" -Wait
-Write-Host "Installed. Start NYXI from the Start menu."
+Write-Host "Installed. Start NYXI Striker from the Start menu."
