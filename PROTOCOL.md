@@ -153,12 +153,12 @@ Modes (byte 1) and their options (high nibble of byte 4). "Offered" means the ap
 | 0 | LightOff | — | Yes |
 | 1 | LightAlwaysOn (solid) | — | Yes |
 | 2 | LightBreath | — | Yes |
-| 3 | LightNeon | 0 default, 1 random | Yes |
+| 3 | LightNeon | 0 default, 1 random (no visible difference on the Striker) | Yes |
 | 4 | LightWave | 0 right, 1 left, 2 down, 3 up | Yes |
-| 5 | LightRipple | 0 full, 1 single (read only) | Yes |
+| 5 | LightRipple | 0 full, 1 single (read only; no visible difference on the Striker) | Yes |
 | 6 | LightRaindrop | — | Yes |
 | 7 | LightSnake | 0 "z" path, 1 "return" path | Yes |
-| 8 | LightPressAction (reactive) | 0 on to off, 1 off to on (read only) | Yes |
+| 8 | LightPressAction (reactive) | 0 on to off, 1 off to on (read only; no visible difference on the Striker) | Yes |
 | 9 | LightConverage | — | Yes |
 | 10 | LightSineWave | — | Yes |
 | 11 | LightKaleidoscope | 0 out, 1 in | Yes |
@@ -174,6 +174,8 @@ Modes (byte 1) and their options (high nibble of byte 4). "Offered" means the ap
 | 21 | LightScreenColor (follows screen) | —; brightness fixed at 4 | Yes |
 | 22 | LightMusicFollow2 | 0 upright, 1 separate, 2 intersect | Yes |
 | 23, 24, 66 | LightTrain, LightFireWorks, LightUserColor | FireWorks: 0 right, 1 left | Not for Striker |
+
+The Neon, Ripple and Reactive options were checked by eye on 2026-10-24 (firmware 1.05): both values of each look the same, so the new app does not offer them.
 
 Modes 20 to 22 only animate while the host streams data (commands 0x0D and 0x0E); the app does that, a bare SET does not. For those modes the app writes color mode 0 for rainbow and 4 otherwise, not 7 or 8.
 

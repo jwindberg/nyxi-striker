@@ -97,7 +97,7 @@
       <!-- Always present (disabled when unused) so the layout never shifts. -->
       <label class="field" class:inactive={!mode?.options.length}>
         <span class="label">Variant</span>
-        <select value={light.option} disabled={!mode?.options.length || pictureBusy} onchange={(e) => { light!.option = Number(e.currentTarget.value); apply(); }}>
+        <select value={mode?.options.length ? light.option : 0} disabled={!mode?.options.length || pictureBusy} onchange={(e) => { light!.option = Number(e.currentTarget.value); apply(); }}>
           {#each mode?.options.length ? mode.options : ["None"] as opt, i}
             <option value={i}>{opt}</option>
           {/each}
