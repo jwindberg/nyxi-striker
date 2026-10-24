@@ -14,6 +14,18 @@ Tools for controlling the NYXI Striker keyboard, model CA01 (backlight, 9x9 scre
 
 ## The new app
 
+### Download
+
+Installers for each release are on the repo's Releases page:
+
+- macOS: `NYXI Striker_<version>_universal.dmg` (Apple silicon and Intel). Open it and drag the app to Applications. The app isn't signed by a registered Apple developer, so macOS refuses it the first time: open System Settings → Privacy & Security and click "Open Anyway" (or run `xattr -dr com.apple.quarantine "/Applications/NYXI Striker.app"`).
+- Windows: `NYXI Striker_<version>_x64-setup.exe`. Windows SmartScreen may warn about an unknown publisher: click "More info", then "Run anyway".
+- Linux: the `.deb` (Debian, Ubuntu) installs the udev rule below for you. The `.AppImage` runs anywhere, but needs the udev rule added by hand.
+
+Every push to `main` also builds all three (the Build workflow under Actions); its installers are kept under that run's artifacts for a while. To make a release, set the version in `app/src-tauri/tauri.conf.json`, then tag and push it (`git tag v0.2.0 && git push origin v0.2.0`); the workflow makes a draft release with the installers, to check and publish on GitHub.
+
+### Build it yourself
+
 ```
 cd app
 npm install

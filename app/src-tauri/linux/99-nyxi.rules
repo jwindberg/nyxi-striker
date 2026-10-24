@@ -1,0 +1,2 @@
+# Lets the NYXI Striker app reach the keyboard (vendor 3151) without root.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3151", MODE="0666"

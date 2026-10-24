@@ -32,6 +32,17 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "macOS": {
+      "signingIdentity": "-"
+    },
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/lib/udev/rules.d/99-nyxi.rules": "linux/99-nyxi.rules"
+        },
+        "postInstallScript": "linux/postinst.sh"
+      }
+    }
   }
 }
