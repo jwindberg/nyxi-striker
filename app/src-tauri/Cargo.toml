@@ -1,6 +1,6 @@
 [package]
 name = "nyxi-app"
-version = "0.1.0"
+version = "1.0.0"
 description = "Control app for the NYXI Striker keyboard"
 authors = ["John Windberg"]
 edition = "2024"

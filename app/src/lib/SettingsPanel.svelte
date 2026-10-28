@@ -2,6 +2,7 @@
   // Keyboard settings. Each control writes to the keyboard as soon as it changes.
   import { onMount } from "svelte";
   import { api, type Info, type Settings, type SleepTimers } from "./api";
+  import { getVersion } from "@tauri-apps/api/app";
 
   let { info }: { info: Info | null } = $props();
 
@@ -14,7 +15,12 @@
   const DEEP_MIN = 10;
   const MAX_MIN = 60;
 
-  onMount(load);
+  let appVersion = $state("");
+
+  onMount(() => {
+    load();
+    getVersion().then((v) => (appVersion = v), () => {});
+  });
 
   async function load() {
     try {
@@ -122,15 +128,16 @@
 
   <section class="panel">
     <h2>About</h2>
-    {#if info}
-      <dl>
+    <dl>
+      <dt>App</dt><dd>NYXI Striker {appVersion}</dd>
+      {#if info}
         <dt>Keyboard</dt><dd>NYXI Striker, model CA01 (device {info.device_id})</dd>
         <dt>Connection</dt><dd>{info.wireless ? "2.4 GHz receiver" : "USB cable"}</dd>
         <dt>Firmware</dt><dd>{version(info.firmware)}</dd>
-      </dl>
-    {:else}
-      <p class="note">Not connected.</p>
-    {/if}
+      {:else}
+        <dt>Keyboard</dt><dd>Not connected</dd>
+      {/if}
+    </dl>
   </section>
 </div>
 
