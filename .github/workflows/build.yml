@@ -65,6 +65,9 @@ jobs:
         run: cargo test -p nyxi-core
 
       - uses: tauri-apps/tauri-action@v0
+        env:
+          # Lets it create the release and upload the installers on a tag.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: app
           args: ${{ matrix.args }}
