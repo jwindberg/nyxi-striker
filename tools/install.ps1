@@ -1,8 +1,9 @@
 # Build the new app (app/) and install it for this user on Windows. Rerun to upgrade.
 # Needs Rust, Node.js/npm and the Visual Studio C++ build tools.
-# Run from PowerShell: powershell -ExecutionPolicy Bypass -File install-app.ps1
+# Run from PowerShell: powershell -ExecutionPolicy Bypass -File tools\install.ps1
 $ErrorActionPreference = "Stop"
-$Root = $PSScriptRoot
+# This script is in tools\; the repo is the folder above.
+$Root = Split-Path -Parent $PSScriptRoot
 
 foreach ($tool in "cargo", "npm") {
     if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {

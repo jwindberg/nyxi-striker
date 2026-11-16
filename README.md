@@ -35,8 +35,9 @@ npm run tauri build    # build an installer for this platform
 
 To build and install it for your user (rerun to upgrade, e.g. after `git pull`):
 
-- macOS or Linux: `./install-app.sh`. macOS gets `/Applications/NYXI Striker.app`; Linux gets the `nyxi-striker` command (in `~/.cargo/bin`) and a "NYXI Striker" menu entry. It runs the same steps as the other projects' scripts, which also work alone: `tools/install.sh` builds and installs the program, `tools/install_desktop.sh` adds the menu entry, and on a Mac `tools/make_mac_app.sh` makes the app.
-- Windows: `powershell -ExecutionPolicy Bypass -File install-app.ps1` (builds the installer and runs it silently; NYXI Striker appears in the Start menu).
+- Linux: `tools/install.sh` builds and installs the `nyxi-striker` command (in `~/.cargo/bin`), then `tools/install_desktop.sh` adds the "NYXI Striker" menu entry.
+- macOS: `tools/make_mac_app.sh` builds `/Applications/NYXI Striker.app`.
+- Windows: `powershell -ExecutionPolicy Bypass -File tools\install.ps1` (builds the installer and runs it silently; NYXI Striker appears in the Start menu).
 
 Needs Rust and Node.js. On Linux also WebKitGTK (`sudo apt install libwebkit2gtk-4.1-dev build-essential`) and the udev rule below; on Windows the Visual Studio C++ build tools.
 
